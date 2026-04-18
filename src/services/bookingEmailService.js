@@ -152,7 +152,7 @@ async function sendBookingEmails({ booking, mode = "initial" }) {
 
   await resend.emails.send({
     from: "ShuiLink Booking <booking@shuilink.com>",
-    to: ["shuilin9108@gmail.com", "shuilin0823@gmail.com"],
+    to: ["shuilin9108@gmail.com", "Zjxinnn@gmail.com", "jasonzheng2016@gmail.com"],
     subject: `Booking Update - ${bookingId}`,
     html: merchantHtml,
     attachments: [
