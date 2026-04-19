@@ -12,8 +12,16 @@ const app = express();
 // ✅ CORS（生产 + 本地都支持）
 app.use(
   cors({
-    origin: true,
-    credentials: true,
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://www.kobehibachicatering.com",
+      "https://kobehibachicatering.com",
+      "https://booking-engine-web-kv8t.vercel.app"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
+    credentials: false,
   })
 );
 
