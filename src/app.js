@@ -9,34 +9,31 @@ const bookingsRouter = require("./routes/bookings");
 
 const app = express();
 
-// ✅ CORS（生产 + 本地都支持）
 app.use(
   cors({
     origin: [
       "http://localhost:5173",
       "http://localhost:3000",
+      "http://127.0.0.1:5500",
+      "http://localhost:5500",
       "https://www.kobehibachicatering.com",
       "https://kobehibachicatering.com",
       "https://booking-engine-web-kv8t.vercel.app"
     ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
     credentials: false,
   })
 );
 
-// ✅ JSON 解析
 app.use(express.json());
 
-// ✅ Debug log（保留）
 console.log("🔥 APP USING ROUTES");
 
-// ✅ Routes
 app.use("/api/health", healthRouter);
 app.use("/api/merchants", merchantsRouter);
 app.use("/api/bookings", bookingsRouter);
 
-// ✅ 根路径（Vercel健康检查）
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
@@ -44,7 +41,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// ✅ 404 处理
 app.use((req, res) => {
   res.status(404).json({
     success: false,
