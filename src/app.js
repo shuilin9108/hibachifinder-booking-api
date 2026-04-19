@@ -12,14 +12,7 @@ const app = express();
 // ✅ CORS（生产 + 本地都支持）
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://localhost:5713",
-      "https://booking-engine-web-kv8t.vercel.app", // ⭐ 加这个
-      // 👉 这里以后可以加你正式前端域名
-      // "https://shuilink.com"
-    ],
+    origin: true,
     credentials: true,
   })
 );
