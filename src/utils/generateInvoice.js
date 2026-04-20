@@ -13,62 +13,27 @@ function formatProteinMap(map = {}) {
   return result || "TBD";
 }
 
-function safe(value, fallback = "Not provided") {
+function safeText(value, fallback = "") {
   if (value === null || value === undefined || value === "") return fallback;
   return String(value);
 }
 
-function joinAddress(address = {}) {
-  const parts = [
-    address?.street,
-    address?.city,
-    address?.state,
-    address?.zipCode,
-  ].filter(Boolean);
-
-  return parts.length ? parts.join(", ") : "Not provided";
-}
-
-function drawHeader(doc) {
-  doc.rect(0, 0, 612, 72).fill("#0f172a");
-
-  doc
-    .fillColor("#ffffff")
-    .font("Helvetica-Bold")
-    .fontSize(20)
-    .text("Hibachi Booking Invoice", 0, 24, {
-      width: 612,
-      align: "center",
-    });
-
-  doc.fillColor("#111111");
-}
-
-function drawSectionTitle(doc, title, x, y) {
+function drawSectionTitle(doc, text, x, y) {
   doc
     .font("Helvetica-Bold")
-    .fontSize(12)
+    .fontSize(13)
     .fillColor("#111111")
-    .text(title, x, y, { width: 220 });
+    .text(text, x, y, { width: 220 });
 }
 
-function drawLine(doc, x1, y1, x2, y2, color = "#dddddd") {
-  doc
-    .strokeColor(color)
-    .lineWidth(1)
-    .moveTo(x1, y1)
-    .lineTo(x2, y2)
-    .stroke();
-}
-
-function drawRow(doc, label, value, x, y, options = {}) {
+function drawLabelValueRow(doc, label, value, x, y, options = {}) {
   const {
-    labelWidth = 92,
-    valueX = x + 98,
-    valueWidth = 118,
+    labelWidth = 90,
+    valueWidth = 120,
+    rowHeight = 18,
     valueAlign = "right",
-    labelColor = "#444444",
     valueColor = "#111111",
+    labelColor = "#555555",
     boldValue = true,
     fontSize = 10,
   } = options;
@@ -86,47 +51,58 @@ function drawRow(doc, label, value, x, y, options = {}) {
     .font(boldValue ? "Helvetica-Bold" : "Helvetica")
     .fontSize(fontSize)
     .fillColor(valueColor)
-    .text(safe(value, ""), valueX, y, {
+    .text(safeText(value), x + labelWidth + 8, y, {
       width: valueWidth,
       align: valueAlign,
       lineBreak: false,
     });
 
-  return y + 16;
+  return y + rowHeight;
 }
 
-function drawWrappedBlock(doc, label, value, x, y, width, options = {}) {
+function drawDivider(doc, x1, x2, y) {
+  doc
+    .strokeColor("#dddddd")
+    .lineWidth(1)
+    .moveTo(x1, y)
+    .lineTo(x2, y)
+    .stroke();
+}
+
+function drawWrappedBlock(doc, title, value, x, y, width, options = {}) {
   const {
-    labelColor = "#444444",
+    titleColor = "#444444",
     valueColor = "#111111",
-    valueBold = true,
-    labelFontSize = 10,
-    valueFontSize = 10,
-    gap = 2,
+    titleFont = "Helvetica",
+    valueFont = "Helvetica-Bold",
+    titleSize = 10,
+    valueSize = 10,
+    gapAfterTitle = 3,
+    gapAfterBlock = 10,
   } = options;
 
   doc
-    .font("Helvetica")
-    .fontSize(labelFontSize)
-    .fillColor(labelColor)
-    .text(label, x, y, { width });
+    .font(titleFont)
+    .fontSize(titleSize)
+    .fillColor(titleColor)
+    .text(title, x, y, { width });
 
-  const valueY = doc.y + gap;
+  const titleBottom = doc.y;
 
   doc
-    .font(valueBold ? "Helvetica-Bold" : "Helvetica")
-    .fontSize(valueFontSize)
+    .font(valueFont)
+    .fontSize(valueSize)
     .fillColor(valueColor)
-    .text(safe(value), x, valueY, { width });
+    .text(safeText(value, "None"), x, titleBottom + gapAfterTitle, { width });
 
-  return doc.y;
+  return doc.y + gapAfterBlock;
 }
 
 function generateInvoiceBuffer(booking) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: "LETTER",
-      margin: 36,
+      margin: 0,
     });
 
     const chunks = [];
@@ -136,18 +112,15 @@ function generateInvoiceBuffer(booking) {
 
     const customer = booking?.customer || {};
     const event = booking?.event || {};
+    const address = event?.address || {};
     const selection = booking?.selection || {};
     const shared = booking?.shared || {};
     const food = booking?.food || {};
     const pricing = booking?.pricingSnapshot || {};
     const payment = booking?.payment || {};
 
-    const customerName =
-      customer?.name ||
-      [customer?.firstName, customer?.lastName].filter(Boolean).join(" ") ||
-      "Not provided";
-
-    const addressText = joinAddress(event?.address || {});
+    const bookingId = booking?.bookingId || "";
+    const createdAt = booking?.createdAt || "";
 
     const addOnsDetails = pricing?.addOnsDetails || "None";
 
@@ -162,12 +135,6 @@ function generateInvoiceBuffer(booking) {
         : "TBD";
 
     const subtotalBeforeDiscount = Number(pricing?.subtotalBeforeDiscount || 0);
-    const adultSubtotal = Number(pricing?.adultSubtotal || 0);
-    const kidSubtotal = Number(pricing?.kidSubtotal || 0);
-    const addOnTotal = Number(pricing?.addOnTotal || 0);
-    const proteinUpgradeTotal = Number(pricing?.proteinUpgradeTotal || 0);
-    const travelMiles = Number(pricing?.travelMiles || 0);
-    const travelFee = Number(pricing?.travelFee || 0);
     const discountedSubtotal = Number(pricing?.subtotal || 0);
     const tax = Number(pricing?.tax || 0);
     const totalPrice = Number(pricing?.totalPrice || pricing?.total || 0);
@@ -200,410 +167,653 @@ function generateInvoiceBuffer(booking) {
     const specialRequestsText = shared?.specialRequests || "None";
     const notesText = booking?.notes || "None";
 
-    const birthdayMonth = shared?.birthday?.month || "Not provided";
-    const birthdayDay = shared?.birthday?.day || "Not provided";
-    const birthdayYear = shared?.birthday?.year || "Not provided";
+    const mealDecisionText =
+      selection?.mealDecision === "now"
+        ? "Protein selections were provided"
+        : "Protein selections will be confirmed later by staff";
 
-    drawHeader(doc);
+    const fullAddress = [
+      address?.street || "",
+      address?.city || "",
+      address?.state || "",
+      address?.zipCode || "",
+    ]
+      .join(", ")
+      .replace(/, ,/g, ",")
+      .replace(/\s+,/g, ",")
+      .trim()
+      .replace(/^,+|,+$/g, "");
+
+    const pageWidth = 612;
+    const pageHeight = 792;
+    const headerHeight = 68;
 
     const leftX = 42;
-    const rightX = 324;
-    const colWidth = 246;
-    const centerX = 306;
-    const startY = 92;
+    const midX = 306;
+    const rightX = 326;
+    const columnWidth = 244;
+    const contentTop = 92;
+    const contentBottomLimit = 748;
 
-    let leftY = startY;
-    let rightY = startY;
+    doc.rect(0, 0, pageWidth, headerHeight).fill("#0b1635");
+    doc
+      .fillColor("#ffffff")
+      .font("Helvetica-Bold")
+      .fontSize(22)
+      .text("Hibachi Booking Invoice", 0, 22, {
+        width: pageWidth,
+        align: "center",
+      });
 
-    drawLine(doc, centerX, 86, centerX, 718, "#d9d9d9");
+    drawDivider(doc, midX, midX, contentTop);
 
-    // LEFT COLUMN
+    let leftY = contentTop;
+    let rightY = contentTop;
+
     drawSectionTitle(doc, "Booking Summary", leftX, leftY);
-    leftY += 18;
-    leftY = drawRow(doc, "Booking ID", safe(booking?.bookingId, ""), leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
-      boldValue: false,
+    leftY += 24;
+    leftY = drawLabelValueRow(doc, "Booking ID", bookingId, leftX, leftY, {
+      labelWidth: 90,
+      valueWidth: 130,
       fontSize: 9,
-    });
-    leftY = drawRow(doc, "Created At", safe(booking?.createdAt, ""), leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
       boldValue: false,
-      fontSize: 9,
     });
-    leftY += 6;
-
-    drawLine(doc, leftX, leftY, leftX + colWidth, leftY);
-    leftY += 10;
+    leftY = drawLabelValueRow(doc, "Created At", createdAt, leftX, leftY, {
+      labelWidth: 90,
+      valueWidth: 130,
+      fontSize: 8,
+      boldValue: false,
+    });
+    drawDivider(doc, leftX, leftX + columnWidth - 8, leftY + 2);
+    leftY += 12;
 
     drawSectionTitle(doc, "Customer", leftX, leftY);
-    leftY += 18;
-    leftY = drawRow(doc, "Name", customerName, leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
-    });
-    leftY = drawRow(doc, "Phone", customer?.phone || "Not provided", leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
-    });
-    leftY = drawRow(doc, "Email", customer?.email || "Not provided", leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
-    });
-    leftY += 6;
-
-    drawLine(doc, leftX, leftY, leftX + colWidth, leftY);
-    leftY += 10;
+    leftY += 24;
+    leftY = drawLabelValueRow(
+      doc,
+      "Name",
+      customer?.name ||
+        `${customer?.firstName || ""} ${customer?.lastName || ""}`.trim(),
+      leftX,
+      leftY
+    );
+    leftY = drawLabelValueRow(doc, "Phone", customer?.phone || "", leftX, leftY);
+    leftY = drawLabelValueRow(doc, "Email", customer?.email || "", leftX, leftY);
+    drawDivider(doc, leftX, leftX + columnWidth - 8, leftY + 2);
+    leftY += 12;
 
     drawSectionTitle(doc, "Event", leftX, leftY);
-    leftY += 18;
-    leftY = drawRow(doc, "Date", event?.date || "Not selected", leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
-    });
-    leftY = drawRow(doc, "Time", event?.time || "Not selected", leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
-    });
-    leftY = drawRow(doc, "Guests", event?.guestCount || 0, leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
-    });
-    leftY = drawRow(doc, "Adults", event?.adultCount || 0, leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
-    });
-    leftY = drawRow(doc, "Kids", event?.kidCount || 0, leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
-    });
-    leftY += 4;
-
-    leftY = drawWrappedBlock(doc, "Address", addressText, leftX, leftY, colWidth, {
-      valueBold: true,
-      valueFontSize: 10,
-    });
-    leftY += 8;
-
-    drawLine(doc, leftX, leftY, leftX + colWidth, leftY);
-    leftY += 10;
-
-    drawSectionTitle(doc, "Selections", leftX, leftY);
-    leftY += 16;
+    leftY += 24;
+    leftY = drawLabelValueRow(doc, "Date", event?.date || "", leftX, leftY);
+    leftY = drawLabelValueRow(doc, "Time", event?.time || "", leftX, leftY);
+    leftY = drawLabelValueRow(
+      doc,
+      "Guests",
+      event?.guestCount || 0,
+      leftX,
+      leftY
+    );
+    leftY = drawLabelValueRow(
+      doc,
+      "Adults",
+      event?.adultCount || 0,
+      leftX,
+      leftY
+    );
+    leftY = drawLabelValueRow(doc, "Kids", event?.kidCount || 0, leftX, leftY);
 
     leftY = drawWrappedBlock(
       doc,
-      "Meal Decision",
-      selection?.mealDecision === "now"
-        ? "Protein selections were provided"
-        : "Protein selections will be confirmed later by staff",
+      "Address",
+      fullAddress || "Not provided",
       leftX,
-      leftY,
-      colWidth,
-      { valueBold: false }
+      leftY + 4,
+      columnWidth - 8,
+      {
+        titleSize: 10,
+        valueSize: 10,
+        gapAfterTitle: 2,
+        gapAfterBlock: 10,
+      }
     );
-    leftY += 8;
 
-    leftY = drawWrappedBlock(doc, "Adult Proteins", adultProteins, leftX, leftY, colWidth, {
-      valueBold: true,
-    });
-    leftY += 8;
+    drawDivider(doc, leftX, leftX + columnWidth - 8, leftY + 2);
+    leftY += 12;
 
-    leftY = drawWrappedBlock(doc, "Kid Proteins", kidProteins, leftX, leftY, colWidth, {
-      valueBold: true,
-    });
-    leftY += 8;
-
-    leftY = drawWrappedBlock(doc, "Add-Ons Details", addOnsDetails, leftX, leftY, colWidth, {
-      valueBold: true,
-    });
-    leftY += 8;
-
-    drawLine(doc, leftX, leftY, leftX + colWidth, leftY);
-    leftY += 10;
-
-    drawSectionTitle(doc, "Additional Information", leftX, leftY);
-    leftY += 18;
-    leftY = drawRow(doc, "Promo Code", promoCode, leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
-      boldValue: false,
-    });
-    leftY = drawRow(doc, "Birth Month", birthdayMonth, leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
-      boldValue: false,
-    });
-    leftY = drawRow(doc, "Birth Day", birthdayDay, leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
-      boldValue: false,
-    });
-    leftY = drawRow(doc, "Birth Year", birthdayYear, leftX, leftY, {
-      labelWidth: 92,
-      valueX: leftX + 98,
-      valueWidth: 148,
-      valueAlign: "left",
-      boldValue: false,
-    });
-
-    leftY = drawWrappedBlock(doc, "Heard About Us", heardAboutText, leftX, leftY + 2, colWidth, {
-      valueBold: false,
-    });
-    leftY += 8;
-
-    leftY = drawWrappedBlock(doc, "Special Requests", specialRequestsText, leftX, leftY, colWidth, {
-      valueBold: false,
-    });
-    leftY += 8;
-
-    leftY = drawWrappedBlock(doc, "Notes", notesText, leftX, leftY, colWidth, {
-      valueBold: false,
-    });
-    leftY += 10;
-
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(11)
-      .fillColor("#b91c1c")
-      .text("⚠ ALLERGIES / DIETARY ALERT", leftX, leftY, { width: colWidth });
-
-    leftY = doc.y + 2;
-
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(11)
-      .fillColor("#dc2626")
-      .text(allergiesText, leftX, leftY, { width: colWidth });
-
-    // RIGHT COLUMN
     drawSectionTitle(doc, "Pricing Breakdown", rightX, rightY);
-    rightY += 18;
-
-    rightY = drawRow(doc, "Package", pricing?.packageName || "Not selected", rightX, rightY, {
-      labelWidth: 96,
-      valueX: rightX + 102,
-      valueWidth: 132,
-      valueAlign: "right",
-    });
-    rightY = drawRow(doc, "Adult Subtotal", money(adultSubtotal), rightX, rightY, {
-      labelWidth: 96,
-      valueX: rightX + 102,
-      valueWidth: 132,
-    });
-    rightY = drawRow(doc, "Kid Subtotal", money(kidSubtotal), rightX, rightY, {
-      labelWidth: 96,
-      valueX: rightX + 102,
-      valueWidth: 132,
-    });
-    rightY = drawRow(doc, "Add-Ons Total", money(addOnTotal), rightX, rightY, {
-      labelWidth: 96,
-      valueX: rightX + 102,
-      valueWidth: 132,
-    });
-    rightY = drawRow(
+    rightY += 24;
+    rightY = drawLabelValueRow(
       doc,
-      "Protein Upgrade",
-      money(proteinUpgradeTotal),
+      "Package",
+      pricing?.packageName || "",
       rightX,
       rightY,
       {
-        labelWidth: 96,
-        valueX: rightX + 102,
-        valueWidth: 132,
+        labelWidth: 100,
+        valueWidth: 116,
       }
     );
-    rightY = drawRow(doc, "Travel Miles", `${travelMiles} mi`, rightX, rightY, {
-      labelWidth: 96,
-      valueX: rightX + 102,
-      valueWidth: 132,
-    });
-    rightY = drawRow(doc, "Travel Fee", money(travelFee), rightX, rightY, {
-      labelWidth: 96,
-      valueX: rightX + 102,
-      valueWidth: 132,
-    });
-    rightY = drawRow(
+    rightY = drawLabelValueRow(
+      doc,
+      "Adult Subtotal",
+      money(pricing?.adultSubtotal || 0),
+      rightX,
+      rightY,
+      {
+        labelWidth: 100,
+        valueWidth: 116,
+      }
+    );
+    rightY = drawLabelValueRow(
+      doc,
+      "Kid Subtotal",
+      money(pricing?.kidSubtotal || 0),
+      rightX,
+      rightY,
+      {
+        labelWidth: 100,
+        valueWidth: 116,
+      }
+    );
+    rightY = drawLabelValueRow(
+      doc,
+      "Add-Ons Total",
+      money(pricing?.addOnTotal || 0),
+      rightX,
+      rightY,
+      {
+        labelWidth: 100,
+        valueWidth: 116,
+      }
+    );
+    rightY = drawLabelValueRow(
+      doc,
+      "Protein Upgrade",
+      money(pricing?.proteinUpgradeTotal || 0),
+      rightX,
+      rightY,
+      {
+        labelWidth: 100,
+        valueWidth: 116,
+      }
+    );
+    rightY = drawLabelValueRow(
+      doc,
+      "Travel Miles",
+      `${pricing?.travelMiles || 0} mi`,
+      rightX,
+      rightY,
+      {
+        labelWidth: 100,
+        valueWidth: 116,
+      }
+    );
+    rightY = drawLabelValueRow(
+      doc,
+      "Travel Fee",
+      money(pricing?.travelFee || 0),
+      rightX,
+      rightY,
+      {
+        labelWidth: 100,
+        valueWidth: 116,
+      }
+    );
+    rightY = drawLabelValueRow(
       doc,
       "Sub Before Disc.",
       money(subtotalBeforeDiscount),
       rightX,
       rightY,
       {
-        labelWidth: 96,
-        valueX: rightX + 102,
-        valueWidth: 132,
+        labelWidth: 100,
+        valueWidth: 116,
       }
     );
-    rightY = drawRow(doc, "Birthday Disc.", `-${money(birthdayDiscount)}`, rightX, rightY, {
-      labelWidth: 96,
-      valueX: rightX + 102,
-      valueWidth: 132,
-    });
-    rightY = drawRow(doc, "Promo Disc.", `-${money(promoDiscount)}`, rightX, rightY, {
-      labelWidth: 96,
-      valueX: rightX + 102,
-      valueWidth: 132,
-    });
-    rightY = drawRow(doc, "Discounted Sub", money(discountedSubtotal), rightX, rightY, {
-      labelWidth: 96,
-      valueX: rightX + 102,
-      valueWidth: 132,
-    });
-    rightY = drawRow(doc, "Estimated Tax", money(tax), rightX, rightY, {
-      labelWidth: 96,
-      valueX: rightX + 102,
-      valueWidth: 132,
-    });
-    rightY = drawRow(doc, "Total Price", money(totalPrice), rightX, rightY, {
-      labelWidth: 96,
-      valueX: rightX + 102,
-      valueWidth: 132,
-      valueColor: "#0f172a",
-    });
+    rightY = drawLabelValueRow(
+      doc,
+      "Birthday Disc.",
+      `-${money(birthdayDiscount)}`,
+      rightX,
+      rightY,
+      {
+        labelWidth: 100,
+        valueWidth: 116,
+      }
+    );
+    rightY = drawLabelValueRow(
+      doc,
+      "Promo Disc.",
+      `-${money(promoDiscount)}`,
+      rightX,
+      rightY,
+      {
+        labelWidth: 100,
+        valueWidth: 116,
+      }
+    );
+    rightY = drawLabelValueRow(
+      doc,
+      "Discounted Sub",
+      money(discountedSubtotal),
+      rightX,
+      rightY,
+      {
+        labelWidth: 100,
+        valueWidth: 116,
+      }
+    );
+    rightY = drawLabelValueRow(
+      doc,
+      "Estimated Tax",
+      money(tax),
+      rightX,
+      rightY,
+      {
+        labelWidth: 100,
+        valueWidth: 116,
+      }
+    );
+    rightY = drawLabelValueRow(
+      doc,
+      "Total Price",
+      money(totalPrice),
+      rightX,
+      rightY,
+      {
+        labelWidth: 100,
+        valueWidth: 116,
+        valueColor: "#0f172a",
+      }
+    );
 
-    rightY += 6;
-    drawLine(doc, rightX, rightY, rightX + colWidth, rightY);
-    rightY += 10;
+    drawDivider(doc, rightX, rightX + columnWidth - 8, rightY + 2);
+    rightY += 12;
 
     drawSectionTitle(doc, "Deposit", rightX, rightY);
-    rightY += 18;
-    rightY = drawRow(doc, "Deposit Amt", money(depositAmount), rightX, rightY, {
-      labelWidth: 96,
-      valueX: rightX + 102,
-      valueWidth: 132,
-    });
-    rightY = drawRow(doc, "Deposit Status", depositStatusText, rightX, rightY, {
-      labelWidth: 96,
-      valueX: rightX + 102,
-      valueWidth: 132,
-      valueColor: depositPaid ? "#15803d" : "#991b1b",
-    });
+    rightY += 24;
+    rightY = drawLabelValueRow(
+      doc,
+      "Deposit Amt",
+      money(depositAmount),
+      rightX,
+      rightY,
+      {
+        labelWidth: 100,
+        valueWidth: 116,
+      }
+    );
+    rightY = drawLabelValueRow(
+      doc,
+      "Status",
+      depositStatusText,
+      rightX,
+      rightY,
+      {
+        labelWidth: 100,
+        valueWidth: 116,
+        valueColor: depositPaid ? "#15803d" : "#b91c1c",
+      }
+    );
 
     if (depositPaid) {
-      rightY = drawRow(
+      rightY = drawLabelValueRow(
         doc,
         "Remaining",
         money(remainingAfterDeposit),
         rightX,
         rightY,
         {
-          labelWidth: 96,
-          valueX: rightX + 102,
-          valueWidth: 132,
+          labelWidth: 100,
+          valueWidth: 116,
         }
       );
     }
 
-    rightY += 6;
-    drawLine(doc, rightX, rightY, rightX + colWidth, rightY);
-    rightY += 10;
+    drawDivider(doc, rightX, rightX + columnWidth - 8, rightY + 2);
+    rightY += 12;
 
     drawSectionTitle(doc, "Suggested Gratuity", rightX, rightY);
-    rightY += 18;
-    rightY = drawRow(
+    rightY += 24;
+    rightY = drawLabelValueRow(
       doc,
       "18%",
-      `${money(gratuity18)} | Total ${money(totalPrice + gratuity18)}`,
+      `${money(gratuity18)}  | Total ${money(totalPrice + gratuity18)}`,
       rightX,
       rightY,
       {
-        labelWidth: 52,
-        valueX: rightX + 58,
-        valueWidth: 188,
-        valueAlign: "left",
+        labelWidth: 42,
+        valueWidth: 174,
         boldValue: false,
+        fontSize: 9,
       }
     );
-    rightY = drawRow(
+    rightY = drawLabelValueRow(
       doc,
       "20%",
-      `${money(gratuity20)} | Total ${money(totalPrice + gratuity20)}`,
+      `${money(gratuity20)}  | Total ${money(totalPrice + gratuity20)}`,
       rightX,
       rightY,
       {
-        labelWidth: 52,
-        valueX: rightX + 58,
-        valueWidth: 188,
-        valueAlign: "left",
+        labelWidth: 42,
+        valueWidth: 174,
         boldValue: false,
+        fontSize: 9,
       }
     );
-    rightY = drawRow(
+    rightY = drawLabelValueRow(
       doc,
       "25%",
-      `${money(gratuity25)} | Total ${money(totalPrice + gratuity25)}`,
+      `${money(gratuity25)}  | Total ${money(totalPrice + gratuity25)}`,
       rightX,
       rightY,
       {
-        labelWidth: 52,
-        valueX: rightX + 58,
-        valueWidth: 188,
-        valueAlign: "left",
+        labelWidth: 42,
+        valueWidth: 174,
         boldValue: false,
+        fontSize: 9,
       }
     );
-    rightY = drawRow(
+    rightY = drawLabelValueRow(
       doc,
       "30%",
-      `${money(gratuity30)} | Total ${money(totalPrice + gratuity30)}`,
+      `${money(gratuity30)}  | Total ${money(totalPrice + gratuity30)}`,
       rightX,
       rightY,
       {
-        labelWidth: 52,
-        valueX: rightX + 58,
-        valueWidth: 188,
-        valueAlign: "left",
+        labelWidth: 42,
+        valueWidth: 174,
         boldValue: false,
+        fontSize: 9,
       }
     );
 
-    rightY += 6;
-    drawLine(doc, rightX, rightY, rightX + colWidth, rightY);
-    rightY += 10;
+    const bodyStartY = Math.max(leftY, rightY) + 14;
 
-    drawSectionTitle(doc, "Operational Notes", rightX, rightY);
-    rightY += 18;
+    drawDivider(doc, leftX, pageWidth - 42, bodyStartY - 8);
 
-    rightY = drawWrappedBlock(
+    let bodyY = bodyStartY;
+
+    drawSectionTitle(doc, "Selections", leftX, bodyY);
+    bodyY += 22;
+
+    bodyY = drawWrappedBlock(
       doc,
-      "Invoice Note",
-      "This invoice was generated by ShuiLink Booking Engine. Deposit payment, staff follow-up, and final operational confirmation may occur after this request is reviewed.",
-      rightX,
-      rightY,
-      colWidth,
+      "Meal Decision",
+      mealDecisionText,
+      leftX,
+      bodyY,
+      pageWidth - 84,
       {
-        valueBold: false,
-        valueFontSize: 9,
+        titleSize: 10,
+        valueSize: 10,
+        valueFont: "Helvetica",
+        gapAfterBlock: 8,
       }
     );
+
+    bodyY = drawWrappedBlock(
+      doc,
+      "Adult Proteins",
+      adultProteins,
+      leftX,
+      bodyY,
+      pageWidth - 84,
+      {
+        titleSize: 10,
+        valueSize: 10,
+        gapAfterBlock: 8,
+      }
+    );
+
+    bodyY = drawWrappedBlock(
+      doc,
+      "Kid Proteins",
+      kidProteins,
+      leftX,
+      bodyY,
+      pageWidth - 84,
+      {
+        titleSize: 10,
+        valueSize: 10,
+        gapAfterBlock: 8,
+      }
+    );
+
+    bodyY = drawWrappedBlock(
+      doc,
+      "Add-Ons Details",
+      addOnsDetails,
+      leftX,
+      bodyY,
+      pageWidth - 84,
+      {
+        titleSize: 10,
+        valueSize: 10,
+        gapAfterBlock: 10,
+      }
+    );
+
+    drawDivider(doc, leftX, pageWidth - 42, bodyY);
+    bodyY += 10;
+
+    const extraLeftX = leftX;
+    const extraRightX = 326;
+    let extraLeftY = bodyY;
+    let extraRightY = bodyY;
+
+    drawSectionTitle(doc, "Additional Information", extraLeftX, extraLeftY);
+    extraLeftY += 22;
+    extraLeftY = drawLabelValueRow(
+      doc,
+      "Promo Code",
+      promoCode,
+      extraLeftX,
+      extraLeftY,
+      {
+        labelWidth: 95,
+        valueWidth: 120,
+        boldValue: false,
+        fontSize: 9,
+      }
+    );
+    extraLeftY = drawLabelValueRow(
+      doc,
+      "Birth Month",
+      shared?.birthday?.month || "Not provided",
+      extraLeftX,
+      extraLeftY,
+      {
+        labelWidth: 95,
+        valueWidth: 120,
+        boldValue: false,
+        fontSize: 9,
+      }
+    );
+    extraLeftY = drawLabelValueRow(
+      doc,
+      "Birth Day",
+      shared?.birthday?.day || "Not provided",
+      extraLeftX,
+      extraLeftY,
+      {
+        labelWidth: 95,
+        valueWidth: 120,
+        boldValue: false,
+        fontSize: 9,
+      }
+    );
+    extraLeftY = drawLabelValueRow(
+      doc,
+      "Birth Year",
+      shared?.birthday?.year || "Not provided",
+      extraLeftX,
+      extraLeftY,
+      {
+        labelWidth: 95,
+        valueWidth: 120,
+        boldValue: false,
+        fontSize: 9,
+      }
+    );
+    extraLeftY = drawLabelValueRow(
+      doc,
+      "Heard About Us",
+      heardAboutText,
+      extraLeftX,
+      extraLeftY,
+      {
+        labelWidth: 95,
+        valueWidth: 120,
+        boldValue: false,
+        fontSize: 9,
+      }
+    );
+
+    extraLeftY = drawWrappedBlock(
+      doc,
+      "Special Requests",
+      specialRequestsText,
+      extraLeftX,
+      extraLeftY + 4,
+      220,
+      {
+        titleSize: 9,
+        valueSize: 9,
+        valueFont: "Helvetica",
+        gapAfterBlock: 8,
+      }
+    );
+
+    extraLeftY = drawWrappedBlock(
+      doc,
+      "Notes",
+      notesText,
+      extraLeftX,
+      extraLeftY,
+      220,
+      {
+        titleSize: 9,
+        valueSize: 9,
+        valueFont: "Helvetica",
+        gapAfterBlock: 0,
+      }
+    );
+
+    drawSectionTitle(doc, "Allergies / Dietary Alert", extraRightX, extraRightY);
+    extraRightY += 22;
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(12)
+      .fillColor("#dc2626")
+      .text(allergiesText, extraRightX, extraRightY, {
+        width: 220,
+      });
+
+    extraRightY = doc.y + 12;
+
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .fillColor("#111111")
+      .text("Operational Notes", extraRightX, extraRightY, {
+        width: 220,
+      });
+
+    extraRightY = doc.y + 6;
+
+    doc
+      .font("Helvetica")
+      .fontSize(8.5)
+      .fillColor("#666666")
+      .text(
+        "This invoice was generated by ShuiLink Booking Engine. Deposit payment, staff follow-up, and final confirmation may occur after this request is reviewed.",
+        extraRightX,
+        extraRightY,
+        {
+          width: 220,
+          lineGap: 1,
+        }
+      );
+
+    const footerY = Math.max(extraLeftY, doc.y) + 10;
+
+    if (footerY > contentBottomLimit) {
+      doc.addPage({
+        size: "LETTER",
+        margin: 0,
+      });
+
+      doc.rect(0, 0, pageWidth, headerHeight).fill("#0b1635");
+      doc
+        .fillColor("#ffffff")
+        .font("Helvetica-Bold")
+        .fontSize(18)
+        .text("Hibachi Booking Invoice", 0, 24, {
+          width: pageWidth,
+          align: "center",
+        });
+
+      let overflowY = 96;
+
+      drawSectionTitle(doc, "Overflow Notes", leftX, overflowY);
+      overflowY += 24;
+
+      overflowY = drawWrappedBlock(
+        doc,
+        "Adult Proteins",
+        adultProteins,
+        leftX,
+        overflowY,
+        pageWidth - 84
+      );
+      overflowY = drawWrappedBlock(
+        doc,
+        "Kid Proteins",
+        kidProteins,
+        leftX,
+        overflowY,
+        pageWidth - 84
+      );
+      overflowY = drawWrappedBlock(
+        doc,
+        "Add-Ons Details",
+        addOnsDetails,
+        leftX,
+        overflowY,
+        pageWidth - 84
+      );
+      overflowY = drawWrappedBlock(
+        doc,
+        "Special Requests",
+        specialRequestsText,
+        leftX,
+        overflowY,
+        pageWidth - 84
+      );
+      overflowY = drawWrappedBlock(
+        doc,
+        "Notes",
+        notesText,
+        leftX,
+        overflowY,
+        pageWidth - 84
+      );
+      overflowY = drawWrappedBlock(
+        doc,
+        "Allergies / Dietary Alert",
+        allergiesText,
+        leftX,
+        overflowY,
+        pageWidth - 84,
+        {
+          titleColor: "#b91c1c",
+          valueColor: "#dc2626",
+          titleFont: "Helvetica-Bold",
+          valueFont: "Helvetica-Bold",
+        }
+      );
+    }
 
     doc.end();
   });
