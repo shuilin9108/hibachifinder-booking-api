@@ -1,5 +1,3 @@
-// 🔥 只改布局 + spacing + 字体（逻辑完全不动）
-
 const PDFDocument = require("pdfkit");
 
 function money(value) {
@@ -15,52 +13,29 @@ function formatProteinMap(map = {}) {
   return result || "TBD";
 }
 
-// ✅ 更紧凑 row
-function drawRow(doc, label, value, options = {}) {
-  const {
-    labelX = 55,
-    valueX = 300, // 🔥 更靠左
-    y = doc.y,
-    valueColor = "#111111",
-    labelColor = "#444444",
-    boldValue = true,
-  } = options;
-
+// 🔥 更紧凑 row（不再使用 doc.y）
+function drawRow(doc, label, value, x, y) {
   doc
     .font("Helvetica")
-    .fontSize(10) // 🔥 缩小字体
-    .fillColor(labelColor)
-    .text(label, labelX, y, { width: 200 });
+    .fontSize(10)
+    .fillColor("#444")
+    .text(label, x, y);
 
   doc
-    .font(boldValue ? "Helvetica-Bold" : "Helvetica")
+    .font("Helvetica-Bold")
     .fontSize(10)
-    .fillColor(valueColor)
-    .text(String(value ?? ""), valueX, y, {
-      width: 200,
+    .fillColor("#111")
+    .text(String(value ?? ""), x + 120, y, {
+      width: 140,
       align: "right",
     });
-
-  doc.moveDown(0.1); // 🔥 减少间距
-}
-
-// ✅ 更紧凑 divider
-function drawDivider(doc) {
-  const y = doc.y + 2;
-  doc
-    .strokeColor("#dddddd")
-    .lineWidth(0.5)
-    .moveTo(55, y)
-    .lineTo(555, y)
-    .stroke();
-  doc.moveDown(0.3);
 }
 
 function generateInvoiceBuffer(booking) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: "LETTER",
-      margin: 40, // 🔥 减少 margin
+      margin: 40,
     });
 
     const chunks = [];
@@ -95,6 +70,8 @@ function generateInvoiceBuffer(booking) {
     const depositPaid =
       String(payment?.depositStatus || "").toLowerCase() === "paid";
 
+    const depositStatusText = depositPaid ? "PAID" : "NOT PAID";
+
     const remainingAfterDeposit = Math.max(0, totalPrice - depositAmount);
 
     const allergiesText =
@@ -104,138 +81,139 @@ function generateInvoiceBuffer(booking) {
 
     // ================= HEADER =================
     doc.rect(0, 0, 612, 70).fill("#0f172a");
+
     doc
-      .fillColor("#ffffff")
+      .fillColor("#fff")
       .font("Helvetica-Bold")
       .fontSize(18)
       .text("Hibachi Booking Invoice", 50, 25, { align: "center" });
 
-    doc.fillColor("#111111");
+    doc.fillColor("#111");
 
+    // ================= LAYOUT =================
     const leftX = 55;
-    const rightX = 310;
+    const rightX = 320;
+
     let yLeft = 100;
     let yRight = 100;
 
-    // ================= 左边 =================
+    // 🔥 中间分割线
+    doc
+      .strokeColor("#dddddd")
+      .lineWidth(1)
+      .moveTo(300, 90)
+      .lineTo(300, 700)
+      .stroke();
+
+    // ================= LEFT =================
 
     doc.font("Helvetica-Bold").fontSize(12).text("Customer", leftX, yLeft);
-    yLeft += 15;
-
-    drawRow(doc, "Name", customer?.name || "", { labelX: leftX, valueX: leftX + 120, y: yLeft });
-    yLeft += 14;
-    drawRow(doc, "Phone", customer?.phone || "", { labelX: leftX, valueX: leftX + 120, y: yLeft });
-    yLeft += 14;
-    drawRow(doc, "Email", customer?.email || "", { labelX: leftX, valueX: leftX + 120, y: yLeft });
-
     yLeft += 18;
+
+    drawRow(doc, "Name", customer?.name || "", leftX, yLeft);
+    yLeft += 16;
+    drawRow(doc, "Phone", customer?.phone || "", leftX, yLeft);
+    yLeft += 16;
+    drawRow(doc, "Email", customer?.email || "", leftX, yLeft);
+
+    yLeft += 24;
 
     doc.font("Helvetica-Bold").text("Event", leftX, yLeft);
-    yLeft += 15;
-
-    drawRow(doc, "Date", event?.date || "", { labelX: leftX, valueX: leftX + 120, y: yLeft });
-    yLeft += 14;
-    drawRow(doc, "Time", event?.time || "", { labelX: leftX, valueX: leftX + 120, y: yLeft });
-    yLeft += 14;
-    drawRow(doc, "Guests", event?.guestCount || 0, { labelX: leftX, valueX: leftX + 120, y: yLeft });
-
     yLeft += 18;
 
+    drawRow(doc, "Date", event?.date || "", leftX, yLeft);
+    yLeft += 16;
+    drawRow(doc, "Time", event?.time || "", leftX, yLeft);
+    yLeft += 16;
+    drawRow(
+      doc,
+      "Guests",
+      event?.guestCount || 0,
+      leftX,
+      yLeft
+    );
+
+    yLeft += 20;
+
     doc.font("Helvetica-Bold").text("Selections", leftX, yLeft);
-    yLeft += 15;
-
-    doc.fontSize(10).text(`Adults: ${adultProteins}`, leftX, yLeft);
-    yLeft += 12;
-    doc.text(`Kids: ${kidProteins}`, leftX, yLeft);
-    yLeft += 12;
-    doc.text(`Add-ons: ${addOnsDetails}`, leftX, yLeft);
-
     yLeft += 16;
 
+    doc.fontSize(10).text(`Adults: ${adultProteins}`, leftX, yLeft);
+    yLeft += 14;
+
+    doc.text(`Kids: ${kidProteins}`, leftX, yLeft);
+    yLeft += 14;
+
+    doc.text(`Add-ons: ${addOnsDetails}`, leftX, yLeft);
+
+    yLeft += 20;
+
+    // 🔴 Allergy（强制红）
     doc
       .font("Helvetica-Bold")
       .fontSize(10)
       .fillColor("#b91c1c")
       .text("⚠ ALLERGY ALERT", leftX, yLeft);
 
-    yLeft += 12;
+    yLeft += 14;
 
     doc
       .font("Helvetica-Bold")
       .fillColor("#dc2626")
-      .text(allergiesText, leftX, yLeft, { width: 240 });
+      .text(allergiesText, leftX, yLeft, { width: 220 });
 
-    // ================= 右边 =================
+    // ================= RIGHT =================
 
-    doc.fillColor("#111111");
+    doc.fillColor("#111");
 
     doc.font("Helvetica-Bold").fontSize(12).text("Pricing", rightX, yRight);
-    yRight += 15;
-
-    drawRow(doc, "Package", pricing?.packageName || "", {
-      labelX: rightX,
-      valueX: rightX + 120,
-      y: yRight,
-    });
-
-    yRight += 14;
-
-    drawRow(doc, "Total", money(totalPrice), {
-      labelX: rightX,
-      valueX: rightX + 120,
-      y: yRight,
-    });
-
     yRight += 18;
+
+    drawRow(doc, "Package", pricing?.packageName || "", rightX, yRight);
+    yRight += 16;
+
+    drawRow(doc, "Total", money(totalPrice), rightX, yRight);
+    yRight += 24;
 
     doc.font("Helvetica-Bold").text("Deposit", rightX, yRight);
-    yRight += 15;
-
-    drawRow(doc, "Deposit", money(depositAmount), {
-      labelX: rightX,
-      valueX: rightX + 120,
-      y: yRight,
-    });
-
-    yRight += 14;
-
-    drawRow(
-      doc,
-      "Status",
-      depositPaid ? "PAID" : "NOT PAID",
-      {
-        labelX: rightX,
-        valueX: rightX + 120,
-        y: yRight,
-      }
-    );
-
-    if (depositPaid) {
-      yRight += 14;
-      drawRow(doc, "Remaining", money(remainingAfterDeposit), {
-        labelX: rightX,
-        valueX: rightX + 120,
-        y: yRight,
-      });
-    }
-
     yRight += 18;
 
-    doc.font("Helvetica-Bold").text("Gratuity", rightX, yRight);
-    yRight += 15;
+    drawRow(doc, "Deposit", money(depositAmount), rightX, yRight);
+    yRight += 16;
 
-    doc.fontSize(10).font("Helvetica");
+    drawRow(doc, "Status", depositStatusText, rightX, yRight);
+    yRight += 16;
+
+    if (depositPaid) {
+      drawRow(
+        doc,
+        "Remaining",
+        money(remainingAfterDeposit),
+        rightX,
+        yRight
+      );
+      yRight += 16;
+    }
+
+    yRight += 20;
+
+    doc.font("Helvetica-Bold").text("Gratuity", rightX, yRight);
+    yRight += 16;
+
+    doc.font("Helvetica").fontSize(10);
 
     doc.text(`18% → ${money(totalPrice * 0.18)}`, rightX, yRight);
-    yRight += 12;
+    yRight += 14;
+
     doc.text(`20% → ${money(totalPrice * 0.2)}`, rightX, yRight);
-    yRight += 12;
+    yRight += 14;
+
     doc.text(`25% → ${money(totalPrice * 0.25)}`, rightX, yRight);
 
     // ================= FOOTER =================
     doc
       .fontSize(8)
-      .fillColor("#666666")
+      .fillColor("#666")
       .text(
         "Generated by ShuiLink Booking Engine",
         55,
