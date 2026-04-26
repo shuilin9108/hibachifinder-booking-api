@@ -344,6 +344,9 @@ const kobeConfig = {
     addressRequired: true,
     notesEnabled: true,
     emailOptional: true,
+    minimumOrderTotal: 500,
+    minimumOrderMessage:
+      "Minimum booking total is $500. Please add guests, upgrade package, or add-ons before submitting.",
   },
 
   content: {
