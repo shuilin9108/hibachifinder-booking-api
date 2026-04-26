@@ -1,5 +1,5 @@
 {
-  "name": "booking-engine-api",
+  "name": "hibachifinder-booking-api",
   "version": "1.0.0",
   "description": "Booking Engine API",
   "main": "src/server.js",
