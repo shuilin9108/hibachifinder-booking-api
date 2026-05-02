@@ -2,14 +2,11 @@
   "name": "hibachifinder-booking-api",
   "version": "1.0.0",
   "description": "Booking Engine API",
-  "main": "src/server.js",
+  "main": "api/index.js",
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
