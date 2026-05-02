@@ -10,31 +10,23 @@ const webhookRoutes = require("./routes/webhook");
 
 const app = express();
 
+// 🚨 直接全开放 CORS（先跑通）
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:3000",
-      "http://127.0.0.1:5500",
-      "http://localhost:5500",
-      "https://www.kobehibachicatering.com",
-      "https://kobehibachicatering.com",
-      "https://booking-engine-web-kv8t.vercel.app",
-      "https://hibachifinder-booking-web.vercel.app",
-      "https://hibachifinder-booking-bfxy2v2ij-shui-lins-projects.vercel.app"
-    ],
+    origin: "*",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
-    credentials: false,
   })
 );
 
 console.log("🔥 APP USING ROUTES");
 
+// webhook 要放前面
 app.use("/api/webhook", webhookRoutes);
 
 app.use(express.json());
 
+// API routes
 app.use("/api/health", healthRouter);
 app.use("/api/merchants", merchantsRouter);
 app.use("/api/bookings", bookingsRouter);
@@ -42,6 +34,7 @@ app.use("/api/bookings", bookingsRouter);
 const adminBookingsRouter = require("./routes/adminBookings");
 app.use("/api/admin/bookings", adminBookingsRouter);
 
+// root test
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
@@ -49,6 +42,7 @@ app.get("/", (req, res) => {
   });
 });
 
+// 404 fallback
 app.use((req, res) => {
   res.status(404).json({
     success: false,
