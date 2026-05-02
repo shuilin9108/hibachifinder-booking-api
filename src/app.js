@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const mongoose = require("mongoose");
 
 const healthRouter = require("./routes/health");
 const merchantsRouter = require("./routes/merchants");
@@ -10,23 +11,52 @@ const webhookRoutes = require("./routes/webhook");
 
 const app = express();
 
-// 🚨 直接全开放 CORS（先跑通）
+let isConnected = false;
+
+async function connectMongo() {
+  if (isConnected || mongoose.connection.readyState === 1) {
+    isConnected = true;
+    return;
+  }
+
+  await mongoose.connect(process.env.MONGODB_URI, {
+    dbName: "test",
+  });
+
+  isConnected = true;
+  console.log("✅ MongoDB Connected");
+}
+
 app.use(
   cors({
-    origin: "*",
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://hibachifinder-booking-web.vercel.app",
+      "https://hibachifinder-booking-bfxy2v2ij-shui-lins-projects.vercel.app",
+    ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
   })
 );
 
-console.log("🔥 APP USING ROUTES");
-
-// webhook 要放前面
-app.use("/api/webhook", webhookRoutes);
-
 app.use(express.json());
 
-// API routes
+app.use(async (req, res, next) => {
+  try {
+    await connectMongo();
+    next();
+  } catch (err) {
+    console.error("❌ Mongo connect failed:", err);
+    return res.status(500).json({
+      success: false,
+      error: "DB connection failed",
+      details: err.message,
+    });
+  }
+});
+
+app.use("/api/webhook", webhookRoutes);
 app.use("/api/health", healthRouter);
 app.use("/api/merchants", merchantsRouter);
 app.use("/api/bookings", bookingsRouter);
@@ -34,19 +64,10 @@ app.use("/api/bookings", bookingsRouter);
 const adminBookingsRouter = require("./routes/adminBookings");
 app.use("/api/admin/bookings", adminBookingsRouter);
 
-// root test
 app.get("/", (req, res) => {
-  res.status(200).json({
+  res.json({
     success: true,
     message: "Booking Engine API Running 🚀",
-  });
-});
-
-// 404 fallback
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: "Route not found",
   });
 });
 
