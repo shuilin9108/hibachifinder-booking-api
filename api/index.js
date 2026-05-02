@@ -8,11 +8,12 @@ module.exports = async (req, res) => {
     if (!isConnected) {
       await connectDB();
       isConnected = true;
+      console.log("✅ MongoDB connected in Vercel function");
     }
 
     return app(req, res);
   } catch (error) {
-    console.error("VERCEL API ERROR:", error);
+    console.error("❌ VERCEL API INIT ERROR:", error);
 
     return res.status(500).json({
       success: false,
