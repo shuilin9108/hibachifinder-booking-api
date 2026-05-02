@@ -1,14 +1,70 @@
+// Kobe Hibachi Catering 商家配置，控制该商家的 booking、价格、页面、通知、支付和集成规则。
+
 const kobeConfig = {
   slug: "kobe",
   preset: "hibachi",
+
+  website: "https://www.kobehibachicatering.com",
+  thankYouRedirectUrl: "https://www.kobehibachicatering.com/thank-you/",
 
   business: {
     name: "Kobe Hibachi Catering",
     address: "5301 8th Ave, Brooklyn, NY 11220",
     phone: "(347) 793-6589",
     email: "kobehibachicatering@gmail.com",
+    website: "https://www.kobehibachicatering.com",
     logoUrl: "/logos/kobe.png",
     homeBaseLabel: "Brooklyn, NY",
+  },
+
+  branding: {
+    businessName: "Kobe Hibachi Catering",
+    invoiceTitle: "Kobe Hibachi Catering Invoice",
+    emailSenderName: "Kobe Hibachi Catering",
+    logoUrl: "/logos/kobe.png",
+    primaryColor: "#111827",
+  },
+
+  notifications: {
+    fromEmail: "ShuiLink Booking <booking@shuilink.com>",
+    merchantEmails: [
+      "kobehibachicatering@gmail.com",
+      "shuilin9108@gmail.com",
+      "Zjxinnn@gmail.com",
+      "jasonzheng2016@gmail.com",
+    ],
+  },
+
+  payments: {
+    stripeDepositLink:
+      "https://buy.stripe.com/9B6eVeabl5qXfbQ85Y2kw00",
+  },
+
+  integrations: {
+    resend: {
+      enabled: true,
+      fromEmail: "ShuiLink Booking <booking@shuilink.com>",
+      merchantNotificationEmail: "kobehibachicatering@gmail.com",
+    },
+
+    googleSheets: {
+      enabled: true,
+      spreadsheetId: "",
+      sheetName: "Kobe Hibachi Bookings",
+      webhookUrl: process.env.KOBE_GOOGLE_SHEET_WEBHOOK_URL || "",
+    },
+
+    googleCalendar: {
+      enabled: false,
+      calendarId: "",
+      webhookUrl: process.env.KOBE_GOOGLE_CALENDAR_WEBHOOK_URL || "",
+    },
+
+    stripe: {
+      enabled: true,
+      depositPaymentLink:
+        "https://buy.stripe.com/9B6eVeabl5qXfbQ85Y2kw00",
+    },
   },
 
   serviceCoverage: {
@@ -77,12 +133,8 @@ const kobeConfig = {
   proteinSelection: {
     enabled: true,
     groups: {
-      adult: {
-        label: "Adult Protein Selection",
-      },
-      kid: {
-        label: "Kid Protein Selection",
-      },
+      adult: { label: "Adult Protein Selection" },
+      kid: { label: "Kid Protein Selection" },
     },
     allowDeferredSelection: true,
   },
@@ -132,7 +184,14 @@ const kobeConfig = {
       label: "Extra Regular Protein",
       unitPrice: 10,
       unitLabel: "each",
-      choices: ["Chicken", "Steak", "Shrimp", "Scallop", "Salmon", "Tofu"],
+      choices: [
+        "Chicken",
+        "Steak",
+        "Shrimp",
+        "Scallops",
+        "Salmon",
+        "Tofu",
+      ],
     },
     {
       id: "extra-premium-protein",
@@ -168,18 +227,15 @@ const kobeConfig = {
   ],
 
   travelFee: {
-    model: "distance_threshold_plus_per_mile",
+    model: "distance_threshold_plus_base_and_per_mile",
     freeMiles: 30,
+    baseFeeOverFreeLimit: 30,
     pricePerMileOverFreeLimit: 1,
     minimumFee: 0,
-
-    // ✅ UI配置
     inputLabel: "Estimated Travel Distance (miles) *",
     inputPlaceholder: "Enter miles",
-
-    // ✅ 展示给客户看的
     helperText:
-      "Distance from our base at 5301 8th Ave, Brooklyn, NY. First 30 miles included. After 30 miles, $1 per mile.",
+      "First 30 miles included. After 30 miles, a $30 travel fee applies plus $1 per additional mile.",
   },
 
   payment: {
@@ -191,8 +247,10 @@ const kobeConfig = {
       label: "Optional $50 Deposit",
       incentive:
         "Pay $50 now to secure your spot faster and get priority scheduling.",
-      stripePaymentLink: "https://buy.stripe.com/9B6eVeabl5qXfbQ85Y2kw00",
+      stripePaymentLink:
+        "https://buy.stripe.com/9B6eVeabl5qXfbQ85Y2kw00",
     },
+    tipOptions: [20, 25, 30],
     notes:
       "Deposit is optional. Our team will confirm availability and final pricing before requiring any additional payment.",
   },
@@ -204,8 +262,7 @@ const kobeConfig = {
       nyStateBaseRate: 0.04,
       nycCombinedRate: 0.08875,
     },
-    notes:
-      "Tax handling should be based on destination/address jurisdiction. Leave disabled until taxable treatment is confirmed for this service model.",
+    notes: "Tax handling should be based on destination/address jurisdiction.",
   },
 
   promotions: {
@@ -280,46 +337,6 @@ const kobeConfig = {
         question: "What is 3 + 6?",
         acceptedAnswers: ["9", "nine"],
       },
-      {
-        id: "sum-3",
-        question: "What is 4 + 5?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-4",
-        question: "What is 5 + 4?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-5",
-        question: "What is 6 + 3?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-6",
-        question: "What is 7 + 2?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-7",
-        question: "What is 8 + 1?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-8",
-        question: "What is 1 + 8?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-9",
-        question: "What is 10 - 1?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-10",
-        question: "What is 12 - 3?",
-        acceptedAnswers: ["9", "nine"],
-      },
     ],
   },
 
@@ -334,7 +351,8 @@ const kobeConfig = {
       },
       {
         id: "travel-fee",
-        label: "that a travel fee may apply based on event location.",
+        label:
+          "I understand that a travel fee may apply based on event location.",
         required: true,
       },
     ],
@@ -360,6 +378,7 @@ const kobeConfig = {
       notice:
         "Final pricing may be adjusted based on travel distance, guest count, package rules, add-ons, promotions, and any applicable tax.",
     },
+
     thankYouPage: {
       title: "Thank you — your booking request has been submitted.",
       subtitle:

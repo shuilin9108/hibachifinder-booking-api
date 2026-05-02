@@ -1,22 +1,36 @@
+// 提供商家配置 API，让前端根据 merchantSlug 获取对应商家信息。
+
 const express = require("express");
-const kobeConfig = require("../merchants/kobe/config");
+
+const getMerchantConfig = require("../core/merchants/getMerchantConfig");
 
 const router = express.Router();
 
 router.get("/:slug", (req, res) => {
-  const { slug } = req.params;
+  try {
+    const { slug } = req.params;
 
-  if (slug === "kobe") {
-    return res.json({
+    const merchant = getMerchantConfig(slug);
+
+    if (!merchant) {
+      return res.status(404).json({
+        success: false,
+        error: `Merchant "${slug}" not found.`,
+      });
+    }
+
+    return res.status(200).json({
       success: true,
-      merchant: kobeConfig,
+      merchant,
+    });
+  } catch (error) {
+    console.error("MERCHANT CONFIG ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: "Failed to load merchant config.",
     });
   }
-
-  return res.status(404).json({
-    success: false,
-    error: "Merchant not found",
-  });
 });
 
 module.exports = router;

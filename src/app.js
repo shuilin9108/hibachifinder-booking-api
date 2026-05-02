@@ -6,6 +6,7 @@ const cors = require("cors");
 const healthRouter = require("./routes/health");
 const merchantsRouter = require("./routes/merchants");
 const bookingsRouter = require("./routes/bookings");
+const webhookRoutes = require("./routes/webhook");
 
 const app = express();
 
@@ -26,13 +27,18 @@ app.use(
   })
 );
 
-app.use(express.json());
-
 console.log("🔥 APP USING ROUTES");
+
+app.use("/api/webhook", webhookRoutes);
+
+app.use(express.json());
 
 app.use("/api/health", healthRouter);
 app.use("/api/merchants", merchantsRouter);
 app.use("/api/bookings", bookingsRouter);
+
+const adminBookingsRouter = require("./routes/adminBookings");
+app.use("/api/admin/bookings", adminBookingsRouter);
 
 app.get("/", (req, res) => {
   res.status(200).json({

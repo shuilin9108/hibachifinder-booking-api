@@ -1,3 +1,5 @@
+// 后端统一价格引擎，根据商家配置计算套餐、加购、蛋白升级、路费、折扣、税和总价。
+
 function normalizePromoCode(code, normalizeMode = "lowercase") {
   const raw = String(code || "").trim();
   if (!raw) return "";
@@ -202,6 +204,7 @@ function getBirthdayDiscount(form, merchant, selectedPackage, subtotalBeforeDisc
   }
 
   const threshold = Number(birthdayPromo.orderThreshold || 0);
+
   if (Number(subtotalBeforeDiscount || 0) < threshold) {
     return {
       amount: 0,
@@ -247,30 +250,82 @@ function getBirthdayDiscount(form, merchant, selectedPackage, subtotalBeforeDisc
 }
 
 function calculateTravelFee(form, merchant) {
+  const travelFeeConfig = merchant?.travelFee || {};
+  const model = travelFeeConfig.model || "distance_threshold_plus_per_mile";
   const travelMiles = Number(form?.event?.travelMiles || 0);
+
+  if (model === "custom_quote" || model === "manual_only") {
+    return {
+      travelMiles: Number.isNaN(travelMiles) || travelMiles < 0 ? 0 : travelMiles,
+      travelFee: 0,
+      extraMiles: 0,
+      travelFeeStatus: "manual_review_required",
+      travelFeeLabel:
+        travelFeeConfig.customerVisibleNote ||
+        travelFeeConfig.helperText ||
+        "Travel fee may apply and will be confirmed by staff.",
+      travelFeeModel: model,
+    };
+  }
 
   if (Number.isNaN(travelMiles) || travelMiles < 0) {
     return {
       travelMiles: 0,
       travelFee: 0,
       extraMiles: 0,
+      travelFeeStatus: "invalid_distance",
+      travelFeeLabel: "Travel distance must be 0 or greater.",
+      travelFeeModel: model,
     };
   }
 
-  const freeMiles = Number(merchant?.travelFee?.freeMiles || 0);
+  const freeMiles = Number(travelFeeConfig.freeMiles || 0);
   const pricePerMileOverFreeLimit = Number(
-    merchant?.travelFee?.pricePerMileOverFreeLimit || 0
+    travelFeeConfig.pricePerMileOverFreeLimit || 0
   );
-  const minimumFee = Number(merchant?.travelFee?.minimumFee || 0);
+  const minimumFee = Number(travelFeeConfig.minimumFee || 0);
+  const baseFeeOverFreeLimit = Number(travelFeeConfig.baseFeeOverFreeLimit || 0);
 
   const extraMiles = Math.max(0, travelMiles - freeMiles);
-  const travelFee = minimumFee + extraMiles * pricePerMileOverFreeLimit;
+
+  let travelFee = 0;
+
+  if (model === "distance_threshold_plus_base_and_per_mile") {
+    travelFee =
+      extraMiles > 0
+        ? baseFeeOverFreeLimit + extraMiles * pricePerMileOverFreeLimit
+        : 0;
+  } else {
+    travelFee = minimumFee + extraMiles * pricePerMileOverFreeLimit;
+  }
 
   return {
     travelMiles,
     travelFee,
     extraMiles,
+    travelFeeStatus: travelFee > 0 ? "calculated" : "included",
+    travelFeeLabel:
+      travelFee > 0
+        ? `Travel fee calculated for ${extraMiles} extra miles.`
+        : "Travel fee included within service radius.",
+    travelFeeModel: model,
   };
+}
+
+function getTaxRate(merchant) {
+  if (!merchant?.tax?.collectTax) {
+    return 0;
+  }
+
+  const fallbackRates = merchant?.tax?.fallbackRates || {};
+
+  return Number(
+    fallbackRates.nycCombinedRate ||
+    fallbackRates.ncFallbackRate ||
+    fallbackRates.scFallbackRate ||
+    fallbackRates.vaFallbackRate ||
+    0
+  );
 }
 
 function emptyPricing() {
@@ -293,6 +348,9 @@ function emptyPricing() {
     travelMiles: 0,
     extraMiles: 0,
     travelFee: 0,
+    travelFeeStatus: "not_calculated",
+    travelFeeLabel: "",
+    travelFeeModel: "",
 
     subtotalBeforeDiscount: 0,
     promoCodeDiscount: 0,
@@ -303,8 +361,11 @@ function emptyPricing() {
     birthdayGuestAgeOnEventDate: null,
     subtotal: 0,
 
-    deposit: 0,
+    tax: 0,
     total: 0,
+    totalPrice: 0,
+
+    deposit: 0,
 
     depositMode: "none",
     optionalDepositLabel: "",
@@ -320,6 +381,8 @@ function calculatePricing(form, merchant) {
     merchant.packages.find((p) => p.id === form.selection?.packageId) || null;
 
   if (!selectedPackage) {
+    const travelSummary = calculateTravelFee(form, merchant);
+
     return {
       ...emptyPricing(),
       adultCount: Number(form.event?.adultCount) || 0,
@@ -327,7 +390,12 @@ function calculatePricing(form, merchant) {
       effectiveGuestCount:
         (Number(form.event?.adultCount) || 0) +
         (Number(form.event?.kidCount) || 0),
-      travelMiles: Number(form.event?.travelMiles || 0) || 0,
+      travelMiles: travelSummary.travelMiles,
+      extraMiles: travelSummary.extraMiles,
+      travelFee: travelSummary.travelFee,
+      travelFeeStatus: travelSummary.travelFeeStatus,
+      travelFeeLabel: travelSummary.travelFeeLabel,
+      travelFeeModel: travelSummary.travelFeeModel,
     };
   }
 
@@ -347,6 +415,7 @@ function calculatePricing(form, merchant) {
   const basePrice = adultSubtotal + kidSubtotal;
 
   let addOnTotal = 0;
+
   if (merchant.addOns && form.addOns) {
     for (const addOn of merchant.addOns) {
       const quantity = Number(form.addOns[addOn.id] || 0);
@@ -382,6 +451,7 @@ function calculatePricing(form, merchant) {
     basePrice + addOnTotal + proteinUpgradeTotal + travelFee;
 
   const promoCodeDiscount = getPromoCodeDiscount(form, merchant);
+
   const birthdayDiscount = getBirthdayDiscount(
     form,
     merchant,
@@ -427,10 +497,7 @@ function calculatePricing(form, merchant) {
     deposit = Number(merchant?.payment?.requiredDeposit?.value || 0);
   }
 
-  const taxRate = merchant?.tax?.collectTax
-    ? Number(merchant?.tax?.fallbackRates?.nycCombinedRate || 0)
-    : 0;
-
+  const taxRate = getTaxRate(merchant);
   const tax = Number((subtotal * taxRate).toFixed(2));
   const total = Number((subtotal + tax).toFixed(2));
 
@@ -453,6 +520,9 @@ function calculatePricing(form, merchant) {
     travelMiles: travelSummary.travelMiles,
     extraMiles: travelSummary.extraMiles,
     travelFee,
+    travelFeeStatus: travelSummary.travelFeeStatus,
+    travelFeeLabel: travelSummary.travelFeeLabel,
+    travelFeeModel: travelSummary.travelFeeModel,
 
     subtotalBeforeDiscount,
     promoCodeDiscount: appliedPromoDiscount,

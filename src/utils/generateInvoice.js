@@ -1,4 +1,7 @@
+//generateInvoice.js 是用来根据 booking 数据生成 PDF 账单/订单确认文件的，包括客户信息、活动时间地点、价格明细、路费、定金、小费建议、蛋白选择、过敏信息和备注，然后作为邮件附件发给客户和商家。
+
 const PDFDocument = require("pdfkit");
+const getMerchantConfig = require("../core/merchants/getMerchantConfig");
 
 function money(value) {
   return `$${Number(value || 0).toFixed(2)}`;
@@ -34,6 +37,32 @@ function buildAddress(address = {}) {
   ].filter(Boolean);
 
   return parts.length ? parts.join(", ") : "Not provided";
+}
+
+function formatPaymentStatus(status) {
+  switch (status) {
+    case "paid_full":
+      return "Paid in Full";
+    case "deposit_paid":
+      return "Deposit Paid";
+    default:
+      return "Unpaid";
+  }
+}
+
+function formatBookingStatus(status) {
+  switch (status) {
+    case "pending":
+      return "Pending";
+    case "confirmed":
+      return "Confirmed";
+    case "completed":
+      return "Completed";
+    case "cancelled":
+      return "Cancelled";
+    default:
+      return "Pending";
+  }
 }
 
 function drawRoundedBox(doc, x, y, w, h, options = {}) {
@@ -80,9 +109,12 @@ function drawKeyValue(doc, label, value, x, y, w, options = {}) {
     valueColor = "#111111",
     labelColor = "#6b7280",
     boldValue = true,
+    allowMultiline = false,
+    valueAlign = "right",
   } = options;
 
   const valueWidth = w - labelWidth - 8;
+  const valueText = safeText(value, "—");
 
   doc
     .font("Helvetica")
@@ -96,14 +128,20 @@ function drawKeyValue(doc, label, value, x, y, w, options = {}) {
   doc
     .font(boldValue ? "Helvetica-Bold" : "Helvetica")
     .fontSize(fontSize)
-    .fillColor(valueColor)
-    .text(safeText(value, "—"), x + labelWidth + 8, y, {
-      width: valueWidth,
-      align: "right",
-      lineBreak: false,
-    });
+    .fillColor(valueColor);
 
-  return y + 13;
+  const valueHeight = doc.heightOfString(valueText, {
+    width: valueWidth,
+    align: valueAlign,
+  });
+
+  doc.text(valueText, x + labelWidth + 8, y, {
+    width: valueWidth,
+    align: valueAlign,
+    lineBreak: allowMultiline,
+  });
+
+  return allowMultiline ? y + Math.max(13, valueHeight + 5) : y + 13;
 }
 
 function drawParagraphBlock(doc, title, value, x, y, w, options = {}) {
@@ -169,6 +207,18 @@ function generateInvoiceBuffer(booking) {
     const food = booking?.food || {};
     const pricing = booking?.pricingSnapshot || {};
     const payment = booking?.payment || {};
+    const merchant = getMerchantConfig(booking?.merchantSlug || "kobe") || {};
+    const business = merchant?.business || {};
+    const branding = merchant?.branding || {};
+
+    const invoiceTitle =
+      branding?.invoiceTitle || "Hibachi Booking Invoice";
+
+    const merchantName =
+      branding?.businessName || business?.name || "Hibachi Booking";
+
+    const merchantPhone = business?.phone || "";
+    const merchantEmail = business?.email || "";
 
     const bookingId = booking?.bookingId || "";
     const createdAt = booking?.createdAt || "";
@@ -193,17 +243,32 @@ function generateInvoiceBuffer(booking) {
     const tax = Number(pricing?.tax || 0);
     const totalPrice = Number(pricing?.totalPrice || pricing?.total || 0);
 
-    const depositAmount = Number(pricing?.deposit || 50);
-    const depositPaid =
-      String(payment?.depositStatus || "").toLowerCase() === "paid";
-    const depositStatusText = depositPaid ? "PAID" : "NOT PAID";
-    const remainingAfterDeposit = Math.max(0, totalPrice - depositAmount);
+const depositAmount = Number(pricing?.deposit || 50);
+
+const rawPaymentStatus = payment?.status || "unpaid";
+
+const paymentStatusText = formatPaymentStatus(rawPaymentStatus);
+
+const depositPaid =
+  rawPaymentStatus === "deposit_paid" ||
+  rawPaymentStatus === "paid_full" ||
+  String(payment?.depositStatus || "").toLowerCase() === "paid";
+
+const depositStatusText = depositPaid ? "Paid" : "Unpaid";
+
+const bookingStatusText = formatBookingStatus(booking?.status);
+
+const remainingAfterDeposit =
+  rawPaymentStatus === "deposit_paid"
+    ? Math.max(0, totalPrice - depositAmount)
+    : rawPaymentStatus === "paid_full"
+      ? 0
+      : totalPrice;
 
     const promoCode = shared?.promoCode || "None";
     const promoDiscount = Number(pricing?.promoCodeDiscount || 0);
     const birthdayDiscount = Number(pricing?.birthdayDiscount || 0);
 
-    const gratuity18 = Number((totalPrice * 0.18).toFixed(2));
     const gratuity20 = Number((totalPrice * 0.2).toFixed(2));
     const gratuity25 = Number((totalPrice * 0.25).toFixed(2));
     const gratuity30 = Number((totalPrice * 0.3).toFixed(2));
@@ -243,10 +308,24 @@ function generateInvoiceBuffer(booking) {
       .font("Helvetica-Bold")
       .fontSize(20)
       .fillColor("#ffffff")
-      .text("Hibachi Booking Invoice", 0, 18, {
+      .text(invoiceTitle, 0, 14, {
         width: pageWidth,
         align: "center",
       });
+    doc
+      .font("Helvetica")
+      .fontSize(8)
+      .fillColor("#ffffff")
+      .text(
+        `${merchantName}${merchantPhone ? " | " + merchantPhone : ""}${merchantEmail ? " | " + merchantEmail : ""
+        }`,
+        0,
+        38,
+        {
+          width: pageWidth,
+          align: "center",
+        }
+      );
 
     // Top summary cards
     const cardH = 142;
@@ -364,10 +443,28 @@ function generateInvoiceBuffer(booking) {
       fontSize: 8.2,
       labelWidth: 100,
     });
-    pY = drawKeyValue(doc, "Travel Fee", money(pricing?.travelFee || 0), leftX + 12, pY, priceW, {
-      fontSize: 8.2,
-      labelWidth: 100,
-    });
+    const travelFeeDisplay =
+      pricing?.travelFeeStatus === "manual_review_required" ||
+        pricing?.travelFeeModel === "custom_quote" ||
+        pricing?.travelFeeModel === "manual_only"
+        ? pricing?.travelFeeLabel || "Travel fee will be confirmed later"
+        : money(pricing?.travelFee || 0);
+
+    pY = drawKeyValue(
+      doc,
+      "Travel Fee",
+      travelFeeDisplay,
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 7.4,
+        labelWidth: 100,
+        boldValue: false,
+        allowMultiline: true,
+        valueAlign: "right",
+      }
+    );
     pY = drawKeyValue(doc, "Sub Before Disc.", money(subtotalBeforeDiscount), leftX + 12, pY, priceW, {
       fontSize: 8.2,
       labelWidth: 100,
@@ -403,11 +500,26 @@ function generateInvoiceBuffer(booking) {
       fontSize: 8.2,
       labelWidth: 92,
     });
-    dY = drawKeyValue(doc, "Status", depositStatusText, rightX + 12, dY, depW, {
-      fontSize: 8.2,
-      labelWidth: 92,
-      valueColor: depositPaid ? "#15803d" : "#b91c1c",
-    });
+dY = drawKeyValue(doc, "Booking Status", bookingStatusText, rightX + 12, dY, depW, {
+  fontSize: 8.2,
+  labelWidth: 92,
+  valueColor: "#111111",
+});
+
+dY = drawKeyValue(doc, "Payment Status", paymentStatusText, rightX + 12, dY, depW, {
+  fontSize: 8.2,
+  labelWidth: 92,
+  valueColor:
+    rawPaymentStatus === "deposit_paid" || rawPaymentStatus === "paid_full"
+      ? "#15803d"
+      : "#b91c1c",
+});
+
+dY = drawKeyValue(doc, "Deposit Status", depositStatusText, rightX + 12, dY, depW, {
+  fontSize: 8.2,
+  labelWidth: 92,
+  valueColor: depositPaid ? "#15803d" : "#b91c1c",
+});
     dY = drawKeyValue(
       doc,
       "Remaining",
@@ -427,20 +539,6 @@ function generateInvoiceBuffer(booking) {
 
     drawSectionHeader(doc, "Suggested Gratuity", rightX + 12, dY, depW);
     dY += 18;
-
-    dY = drawKeyValue(
-      doc,
-      "18%",
-      `${money(gratuity18)} | Total ${money(totalPrice + gratuity18)}`,
-      rightX + 12,
-      dY,
-      depW,
-      {
-        fontSize: 7.7,
-        labelWidth: 34,
-        boldValue: false,
-      }
-    );
     dY = drawKeyValue(
       doc,
       "20%",

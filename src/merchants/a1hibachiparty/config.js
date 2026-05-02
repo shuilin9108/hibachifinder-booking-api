@@ -1,0 +1,393 @@
+// A1 Hibachi Party 商家配置，控制该商家的 booking、价格、页面、通知、支付和集成规则。
+
+const a1hibachipartyConfig = {
+  slug: "a1hibachiparty",
+  preset: "hibachi",
+
+  website: "https://www.a1hibachiparty.com",
+  thankYouRedirectUrl: "https://www.a1hibachiparty.com/thank-you/",
+
+  business: {
+    name: "A1 Hibachi Party",
+    address: "5102 7th Ave, Brooklyn, NY 11220",
+    phone: "(646) 358-2225 / (646) 204-6895",
+    email: "a1hibachiparty@gmail.com",
+    website: "https://www.a1hibachiparty.com",
+    logoUrl: "/logos/a1hibachiparty.png",
+    homeBaseLabel: "Brooklyn, NY",
+  },
+
+  branding: {
+    businessName: "A1 Hibachi Party",
+    invoiceTitle: "A1 Hibachi Party Invoice",
+    emailSenderName: "A1 Hibachi Party",
+    logoUrl: "/logos/a1hibachiparty.png",
+    primaryColor: "#dc2626",
+  },
+
+  notifications: {
+    fromEmail: "ShuiLink Booking <booking@shuilink.com>",
+    merchantEmails: [
+      "a1hibachiparty@gmail.com",
+      "shuilin9108@gmail.com",
+      "Yuangao202121@gmail.com",
+    ],
+  },
+
+  payments: {
+    stripeDepositLink:
+      "https://buy.stripe.com/8x2eVd00q61PgiUg1WfjG01",
+  },
+
+  integrations: {
+    resend: {
+      enabled: true,
+      fromEmail: "ShuiLink Booking <booking@shuilink.com>",
+      merchantNotificationEmail: "a1hibachiparty@gmail.com",
+    },
+
+    googleSheets: {
+      enabled: true,
+      spreadsheetId: "",
+      sheetName: "A1 Hibachi Party Bookings",
+      webhookUrl: process.env.A1HIBACHIPARTY_GOOGLE_SHEET_WEBHOOK_URL || "",
+    },
+
+    googleCalendar: {
+      enabled: false,
+      calendarId: "",
+      webhookUrl: process.env.A1HIBACHIPARTY_GOOGLE_CALENDAR_WEBHOOK_URL || "",
+    },
+
+    stripe: {
+      enabled: true,
+      depositPaymentLink:
+        "https://buy.stripe.com/8x2eVd00q61PgiUg1WfjG01",
+    },
+  },
+
+  serviceCoverage: {
+    model: "travel_time_radius",
+    originAddress: "5102 7th Ave, Brooklyn, NY 11220",
+    maxDriveTimeMinutes: 180,
+    supportsOutOfAreaInquiry: true,
+    notes:
+      "Service is generally available within about 3 hours of NYC depending on traffic and event size.",
+  },
+
+  seoLocations: {
+    featured: [
+      "Manhattan, NY",
+      "Brooklyn, NY",
+      "Queens, NY",
+      "Staten Island, NY",
+      "White Plains, NY",
+      "Scarsdale, NY",
+      "Stamford, CT",
+      "Greenwich, CT",
+      "Jersey City, NJ",
+      "Short Hills, NJ",
+      "Philadelphia, PA",
+      "Gladwyne, PA",
+    ],
+    purpose:
+      "High-income luxury hibachi catering SEO targeting across NYC, NY, NJ, CT, and PA",
+  },
+
+  businessHours: {
+    timezone: "America/New_York",
+    slotIntervalMinutes: 30,
+    weeklySchedule: {
+      sunday: { isOpen: true, open: "10:00", close: "22:00" },
+      monday: { isOpen: true, open: "10:00", close: "22:00" },
+      tuesday: { isOpen: true, open: "10:00", close: "22:00" },
+      wednesday: { isOpen: true, open: "10:00", close: "22:00" },
+      thursday: { isOpen: true, open: "10:00", close: "22:00" },
+      friday: { isOpen: true, open: "10:00", close: "22:00" },
+      saturday: { isOpen: true, open: "10:00", close: "22:00" },
+    },
+  },
+
+  proteinCatalog: [
+    { id: "chicken", label: "Chicken", category: "regular", upgradeFee: 0 },
+    { id: "shrimp", label: "Shrimp", category: "regular", upgradeFee: 0 },
+    { id: "steak", label: "Steak", category: "regular", upgradeFee: 0 },
+    { id: "salmon", label: "Salmon", category: "regular", upgradeFee: 0 },
+    { id: "tofu", label: "Tofu", category: "regular", upgradeFee: 0 },
+    { id: "scallops", label: "Scallops", category: "regular", upgradeFee: 0 },
+    {
+      id: "filet-mignon",
+      label: "Filet Mignon",
+      category: "premium",
+      upgradeFee: 5,
+    },
+    {
+      id: "lobster-tail",
+      label: "Lobster Tail",
+      category: "premium",
+      upgradeFee: 10,
+    },
+  ],
+
+  proteinSelection: {
+    enabled: true,
+    groups: {
+      adult: { label: "Adult Protein Selection" },
+      kid: { label: "Kid Protein Selection" },
+    },
+    allowDeferredSelection: true,
+  },
+
+  packages: [
+    {
+      id: "two-protein",
+      name: "2-Protein Package",
+      pricingModel: "per_person",
+      adultPrice: 50,
+      kidPrice: 30,
+      rules: {
+        proteinsIncludedPerGuest: 2,
+        minGuests: 10,
+        maxGuests: 49,
+      },
+    },
+    {
+      id: "three-protein",
+      name: "3-Protein Package",
+      pricingModel: "per_person",
+      adultPrice: 60,
+      kidPrice: 40,
+      rules: {
+        proteinsIncludedPerGuest: 3,
+        minGuests: 10,
+        maxGuests: 49,
+      },
+    },
+    {
+      id: "large-party-two-protein",
+      name: "Large Party 2-Protein Package",
+      pricingModel: "per_person",
+      adultPrice: 30,
+      kidPrice: 20,
+      rules: {
+        proteinsIncludedPerGuest: 2,
+        minGuests: 50,
+        maxGuests: null,
+      },
+    },
+  ],
+
+  addOns: [
+    {
+      id: "extra-regular-protein",
+      label: "Extra Regular Protein",
+      unitPrice: 10,
+      unitLabel: "each",
+      choices: [
+        "Chicken",
+        "Steak",
+        "Shrimp",
+        "Scallops",
+        "Salmon",
+        "Tofu",
+      ],
+    },
+    {
+      id: "extra-premium-protein",
+      label: "Extra Premium Protein",
+      unitPrice: 15,
+      unitLabel: "each",
+      choices: ["Filet Mignon", "Lobster Tail"],
+    },
+    {
+      id: "fried-rice",
+      label: "Fried Rice",
+      unitPrice: 5,
+      unitLabel: "order",
+    },
+    {
+      id: "stir-fried-noodles",
+      label: "Stir Fried Noodles",
+      unitPrice: 5,
+      unitLabel: "order",
+    },
+    {
+      id: "edamame",
+      label: "Edamame",
+      unitPrice: 5,
+      unitLabel: "order",
+    },
+    {
+      id: "gyoza",
+      label: "Gyoza (6 pieces)",
+      unitPrice: 8,
+      unitLabel: "order",
+    },
+  ],
+
+  travelFee: {
+    model: "distance_threshold_plus_base_and_per_mile",
+    freeMiles: 30,
+    baseFeeOverFreeLimit: 30,
+    pricePerMileOverFreeLimit: 1,
+    minimumFee: 0,
+    inputLabel: "Estimated Travel Distance (miles) *",
+    inputPlaceholder: "Enter miles",
+    helperText:
+      "First 30 miles included. After 30 miles, a $30 travel fee applies plus $1 per additional mile.",
+  },
+
+  payment: {
+    depositMode: "optional",
+    optionalDeposit: {
+      enabled: true,
+      type: "fixed",
+      value: 50,
+      label: "Optional $50 Deposit",
+      incentive:
+        "Pay $50 now to secure your spot faster and get priority scheduling.",
+      stripePaymentLink:
+        "https://buy.stripe.com/8x2eVd00q61PgiUg1WfjG01",
+    },
+    tipOptions: [20, 25, 30],
+    notes:
+      "Deposit is optional. Final availability and pricing will be confirmed by our team.",
+  },
+
+  tax: {
+    collectTax: true,
+    model: "destination_based_sales_tax",
+    fallbackRates: {
+      nyStateBaseRate: 0.04,
+      nycCombinedRate: 0.08875,
+    },
+    notes: "Tax handling should be based on destination/address jurisdiction.",
+  },
+
+  promotions: {
+    allowStacking: false,
+
+    promoCodeField: {
+      enabled: true,
+      label: "Promo Code (Optional)",
+      placeholder: "Enter promo code",
+      normalize: "lowercase",
+    },
+
+    birthdayPromo: {
+      enabled: true,
+      id: "birthday-free-meal",
+      type: "birthday_free_if_order_over_threshold",
+      label: "FREE birthday guest meal (optional)",
+      descriptionLines: [
+        "Add your birthday to see if you qualify",
+        "Valid within ±7 days of the event",
+        "Order must be over $800.00",
+        "Valid ID verification required",
+      ],
+      orderThreshold: 800,
+      birthdayWindowDays: 7,
+      appliesTo: "one_adult_meal",
+      combinable: false,
+    },
+
+    codes: [
+      {
+        code: "welcome50",
+        type: "flat_amount",
+        amountOff: 50,
+        combinable: false,
+        active: true,
+        caseSensitive: false,
+        label: "Welcome $50 Off",
+      },
+    ],
+  },
+
+  sharedFields: {
+    heardAboutEnabled: true,
+    specialRequestsEnabled: true,
+    allergiesEnabled: true,
+    allergiesOptions: [
+      "No known allergies",
+      "Shellfish",
+      "Peanuts",
+      "Tree Nuts",
+      "Dairy",
+      "Eggs",
+      "Soy",
+      "Gluten",
+      "Sesame",
+      "Fish",
+      "Other",
+    ],
+  },
+
+  antiSpam: {
+    enabled: true,
+    challenges: [
+      {
+        id: "sum-1",
+        question: "What is 2 + 7?",
+        acceptedAnswers: ["9", "nine"],
+      },
+      {
+        id: "sum-2",
+        question: "What is 3 + 6?",
+        acceptedAnswers: ["9", "nine"],
+      },
+    ],
+  },
+
+  termsAndAgreements: {
+    title: "Terms & Agreements",
+    items: [
+      {
+        id: "property-damage",
+        label:
+          "A1 Hibachi Party is not responsible for any property damage during the event.",
+        required: true,
+      },
+      {
+        id: "travel-fee",
+        label:
+          "I understand that a travel fee may apply depending on event location.",
+        required: true,
+      },
+    ],
+  },
+
+  booking: {
+    addressRequired: true,
+    notesEnabled: true,
+    emailOptional: true,
+    minimumOrderTotal: 500,
+    minimumOrderMessage:
+      "Minimum booking subtotal is $500 before submitting.",
+  },
+
+  content: {
+    bookingPage: {
+      title: "Book Your A1 Hibachi Party Experience",
+      subtitle:
+        "Private outdoor hibachi catering for birthdays, backyard parties, family events, and unforgettable celebrations.",
+      submitLabel: "Request My Booking",
+      depositHint:
+        "Optional $50 deposit available for faster priority scheduling.",
+      notice:
+        "Final pricing may vary based on travel, guest count, add-ons, taxes, and selected upgrades.",
+    },
+    thankYouPage: {
+      title: "Thank you — your booking request has been submitted.",
+      subtitle:
+        "Our team will review your request and contact you shortly to confirm availability and final details.",
+    },
+  },
+
+  theme: {
+    primaryColor: "#dc2626",
+    cardRadius: "18px",
+  },
+};
+
+module.exports = a1hibachipartyConfig;

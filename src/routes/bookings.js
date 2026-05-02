@@ -1,21 +1,35 @@
+// 处理 booking 创建、查询、更新，以及根据 merchantSlug 使用对应商家规则。
+
 const express = require("express");
 const { sendBookingEmails } = require("../services/bookingEmailService");
 const { upsertBookingCalendarEvent } = require("../services/bookingCalendarService");
 const { calculatePricing } = require("../core/pricing/pricingEngine");
-const kobeConfig = require("../merchants/kobe/config");
-
+const getMerchantConfig = require("../core/merchants/getMerchantConfig");
+const Booking = require("../models/Booking");
 console.log("🔥 NEW BOOKING ROUTE LOADED");
 
 const router = express.Router();
 const bookingStore = new Map();
+
+function getPayloadMerchant(payload) {
+  const merchantSlug = payload?.merchantSlug || "kobe";
+  const merchant = getMerchantConfig(merchantSlug);
+
+  return {
+    merchantSlug,
+    merchant,
+  };
+}
 
 function validateBookingPayload(payload) {
   if (!payload || typeof payload !== "object") {
     return "Missing booking payload.";
   }
 
-  if (payload.merchantSlug !== "kobe") {
-    return "Invalid merchant slug.";
+  const { merchantSlug, merchant } = getPayloadMerchant(payload);
+
+  if (!merchant) {
+    return `Invalid merchant slug: ${merchantSlug}.`;
   }
 
   const customer = payload.customer || {};
@@ -71,9 +85,15 @@ function validateBookingPayload(payload) {
     return "Package selection is required.";
   }
 
-  const totalPrice = Number(payload?.pricingSnapshot?.totalPrice || 0);
-  if (totalPrice < 500) {
-    return "Minimum booking total for Kobe is $500.";
+  const minimumOrderTotal = Number(merchant?.booking?.minimumOrderTotal || 0);
+  const subtotalBeforeDiscount = Number(
+    payload?.pricingSnapshot?.subtotalBeforeDiscount ||
+    payload?.pricingSnapshot?.totalPrice ||
+    0
+  );
+
+  if (minimumOrderTotal > 0 && subtotalBeforeDiscount < minimumOrderTotal) {
+    return `Minimum booking subtotal for ${merchant.business?.name || merchantSlug} is $${minimumOrderTotal}.`;
   }
 
   return "";
@@ -185,6 +205,27 @@ function parseBooleanLike(value) {
   return raw === "true" || raw === "yes";
 }
 
+function buildFormLikeObjectFromPayload(payload) {
+  return {
+    customer: payload.customer || {},
+    event: payload.event || {},
+    selection: {
+      ...(payload.selection || {}),
+      proteins: payload.selection?.proteins || {
+        adult: {},
+        kid: {},
+      },
+    },
+    shared: payload.shared || {},
+    food: payload.food || {},
+    merchantSpecific: payload.merchantSpecific || {
+      agreements: [],
+    },
+    notes: payload.notes || "",
+    addOns: payload.selection?.addOns || {},
+  };
+}
+
 function buildFormLikeObjectFromSheetRow(rowData, existingBooking = null) {
   const adultProteins = parseProteinText(rowData["Adult Proteins"]);
   const kidProteins = parseProteinText(rowData["Kid Proteins"]);
@@ -195,9 +236,9 @@ function buildFormLikeObjectFromSheetRow(rowData, existingBooking = null) {
 
   const mealDecision =
     Object.keys(adultProteins).length > 0 ||
-    Object.keys(kidProteins).length > 0 ||
-    proteinStatus === "selected_by_customer" ||
-    proteinStatus === "updated_by_staff"
+      Object.keys(kidProteins).length > 0 ||
+      proteinStatus === "selected_by_customer" ||
+      proteinStatus === "updated_by_staff"
       ? "now"
       : "later";
 
@@ -271,8 +312,22 @@ function buildFormLikeObjectFromSheetRow(rowData, existingBooking = null) {
 
 function buildBookingFromSheetRow(rowData, existingBooking = null) {
   const bookingId = String(rowData["Booking ID"] || "").trim();
+
+  const merchantSlug = String(
+    rowData["Merchant Slug"] ||
+    rowData["merchantSlug"] ||
+    existingBooking?.merchantSlug ||
+    "kobe"
+  ).trim();
+
+  const merchant = getMerchantConfig(merchantSlug);
+
+  if (!merchant) {
+    throw new Error(`Invalid merchant slug: ${merchantSlug}.`);
+  }
+
   const form = buildFormLikeObjectFromSheetRow(rowData, existingBooking);
-  const recalculatedPricing = calculatePricing(form, kobeConfig);
+  const recalculatedPricing = calculatePricing(form, merchant);
 
   const totalGuests =
     Number(form.event.adultCount || 0) + Number(form.event.kidCount || 0);
@@ -291,7 +346,7 @@ function buildBookingFromSheetRow(rowData, existingBooking = null) {
   ).trim();
 
   return {
-    merchantSlug: "kobe",
+    merchantSlug,
     bookingId,
     status,
     createdAt:
@@ -387,10 +442,15 @@ router.post("/", async (req, res) => {
     });
   }
 
+  const { merchantSlug, merchant } = getPayloadMerchant(payload);
+  const formForPricing = buildFormLikeObjectFromPayload(payload);
+  const recalculatedPricing = calculatePricing(formForPricing, merchant);
+
   const bookingId = `bk_${Date.now()}`;
 
   const bookingRecord = {
     ...payload,
+    merchantSlug,
     bookingId,
     status: "pending",
     createdAt: new Date().toISOString(),
@@ -399,9 +459,16 @@ router.post("/", async (req, res) => {
       ...(payload.payment || {}),
       depositStatus: payload?.payment?.depositStatus || "unpaid",
     },
+    pricingSnapshot: {
+      ...(payload.pricingSnapshot || {}),
+      ...recalculatedPricing,
+      totalPrice: Number(recalculatedPricing.total || recalculatedPricing.totalPrice || 0),
+      total: Number(recalculatedPricing.total || recalculatedPricing.totalPrice || 0),
+    },
   };
 
   bookingStore.set(bookingId, bookingRecord);
+  await Booking.create(bookingRecord);
 
   try {
     await sendBookingEmails({
@@ -531,10 +598,16 @@ router.post("/restore-from-sheet", (req, res) => {
     const existingBooking = bookingStore.get(bookingId) || null;
     const restoredBooking = buildBookingFromSheetRow(rowData, existingBooking);
 
-    if (Number(restoredBooking?.pricingSnapshot?.totalPrice || 0) < 500) {
+    const merchant = getMerchantConfig(restoredBooking.merchantSlug);
+    const minimumOrderTotal = Number(merchant?.booking?.minimumOrderTotal || 0);
+
+    if (
+      minimumOrderTotal > 0 &&
+      Number(restoredBooking?.pricingSnapshot?.totalPrice || 0) < minimumOrderTotal
+    ) {
       return res.status(400).json({
         success: false,
-        error: "Minimum booking total for Kobe is $500.",
+        error: `Minimum booking total for ${merchant.business?.name || restoredBooking.merchantSlug} is $${minimumOrderTotal}.`,
       });
     }
 
@@ -635,5 +708,7 @@ router.post("/:bookingId/mark-deposit-paid", async (req, res) => {
     });
   }
 });
+
+router.bookingStore = bookingStore;
 
 module.exports = router;
