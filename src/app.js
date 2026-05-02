@@ -19,7 +19,9 @@ app.use(
       "http://localhost:5500",
       "https://www.kobehibachicatering.com",
       "https://kobehibachicatering.com",
-      "https://booking-engine-web-kv8t.vercel.app"
+      "https://booking-engine-web-kv8t.vercel.app",
+      "https://hibachifinder-booking-web.vercel.app",
+      "https://hibachifinder-booking-bfxy2v2ij-shui-lins-projects.vercel.app"
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
