@@ -5,7 +5,7 @@ const a1hibachipartyConfig = {
   preset: "hibachi",
 
   website: "https://www.a1hibachiparty.com",
-  thankYouRedirectUrl: "https://www.a1hibachiparty.com/thank-you/",
+  thankYouRedirectUrl: "https://www.a1hibachiparty.com/thank-you.html",
 
   business: {
     name: "A1 Hibachi Party",

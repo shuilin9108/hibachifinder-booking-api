@@ -5,7 +5,7 @@ const hibachiNearbyConfig = {
   preset: "hibachi",
 
   website: "https://hibachinearby.com",
-  thankYouRedirectUrl: "https://hibachinearby.com/thank-you/",
+  thankYouRedirectUrl: "https://www.hibachinearby.com/thank-you.html",
 
   business: {
     name: "HibachiNearby",
