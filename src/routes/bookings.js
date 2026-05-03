@@ -489,21 +489,33 @@ router.post("/", async (req, res) => {
   });
 });
 
-router.get("/:bookingId", (req, res) => {
-  const { bookingId } = req.params;
-  const booking = bookingStore.get(bookingId);
+router.get("/:bookingId", async (req, res) => {
+  try {
+    const { bookingId } = req.params;
 
-  if (!booking) {
-    return res.status(404).json({
+    const booking =
+      bookingStore.get(bookingId) ||
+      (await Booking.findOne({ bookingId }).lean());
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        error: "Booking not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      booking,
+    });
+  } catch (error) {
+    console.error("GET BOOKING ERROR:", error);
+
+    return res.status(500).json({
       success: false,
-      error: "Booking not found.",
+      error: "Failed to load booking.",
     });
   }
-
-  return res.status(200).json({
-    success: true,
-    booking,
-  });
 });
 
 router.patch("/:bookingId", async (req, res) => {
