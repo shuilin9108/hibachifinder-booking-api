@@ -32,11 +32,22 @@ app.use(
     origin: [
       "http://localhost:5173",
       "http://localhost:3000",
+
       "https://hibachifinder-booking-web.vercel.app",
       "https://hibachifinder-booking-bfxy2v2ij-shui-lins-projects.vercel.app",
+
+      "https://www.a1hibachiparty.com",
+      "https://a1hibachiparty.com",
+
+      "https://www.hibachinearby.com",
+      "https://hibachinearby.com",
+
+      "https://www.kobehibachicatering.com",
+      "https://kobehibachicatering.com"
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
+    credentials: false,
   })
 );
 
