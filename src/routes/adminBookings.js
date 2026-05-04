@@ -9,18 +9,31 @@ const { canAccessMerchant } = require("../data/adminUsers");
 const { sendBookingEmails } = require("../services/bookingEmailService");
 const Booking = require("../models/Booking");
 
+function isPlatformAdmin(user) {
+  return user?.role === "platform_admin";
+}
+
 router.get("/", requireAdminUser, async (req, res) => {
   try {
     const user = req.adminUser;
     const query = {};
 
-    if (user.role !== "admin") {
-      query.merchantSlug = { $in: user.merchantSlugs };
-    }
+if (isPlatformAdmin(user)) {
+  // 全部订单
+} else if (user.role === "merchant_owner" || user.role === "merchant_staff") {
+  query.merchantSlug = { $in: user.merchantSlugs || [] };
+} else if (user.role === "assigned_chef") {
+  query.assignedChefEmail = user.email;
+} else {
+  return res.status(403).json({
+    success: false,
+    error: "Forbidden",
+  });
+}
 
     const bookings = await Booking.find(query)
       .sort({ createdAt: -1 })
-      .limit(200)
+      .limit(5000)
       .lean();
 
     return res.status(200).json({
@@ -38,15 +51,13 @@ router.get("/", requireAdminUser, async (req, res) => {
     });
   }
 });
+
 router.patch("/bulk/archive", requireAdminUser, async (req, res) => {
   try {
     const user = req.adminUser;
-    const { adminEmail } = req.query;
     const { bookingIds } = req.body;
 
-    const SUPER_ADMINS = ["shuilin9108@gmail.com", "admin@shuilink.com"];
-
-    if (user.role !== "admin" || !SUPER_ADMINS.includes(adminEmail)) {
+    if (!isPlatformAdmin(user)) {
       return res.status(403).json({
         success: false,
         error: "Not authorized",
@@ -65,7 +76,7 @@ router.patch("/bulk/archive", requireAdminUser, async (req, res) => {
       {
         archived: true,
         archivedAt: new Date(),
-        archivedBy: adminEmail,
+        archivedBy: user.email,
         updatedAt: new Date().toISOString(),
       }
     );
@@ -83,15 +94,60 @@ router.patch("/bulk/archive", requireAdminUser, async (req, res) => {
     });
   }
 });
+router.patch("/:bookingId/assign-chef", requireAdminUser, async (req, res) => {
+  try {
+    const user = req.adminUser;
+
+    if (!isPlatformAdmin(user) && user.role !== "merchant_owner") {
+      return res.status(403).json({
+        success: false,
+        error: "Not authorized",
+      });
+    }
+
+    const { assignedChefEmail } = req.body;
+
+    const booking = await Booking.findOne({
+      bookingId: req.params.bookingId,
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        error: "Booking not found",
+      });
+    }
+
+    if (!isPlatformAdmin(user) && !canAccessMerchant(user, booking.merchantSlug)) {
+      return res.status(403).json({
+        success: false,
+        error: "Forbidden",
+      });
+    }
+
+    booking.assignedChefEmail = assignedChefEmail;
+    booking.updatedAt = new Date().toISOString();
+
+    await booking.save();
+
+    return res.json({
+      success: true,
+      booking,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: "Assign chef failed",
+    });
+  }
+});
+
 router.delete("/bulk/delete", requireAdminUser, async (req, res) => {
   try {
     const user = req.adminUser;
-    const { adminEmail } = req.query;
     const { bookingIds } = req.body;
 
-    const SUPER_ADMINS = ["shuilin9108@gmail.com", "admin@shuilink.com"];
-
-    if (user.role !== "admin" || !SUPER_ADMINS.includes(adminEmail)) {
+    if (!isPlatformAdmin(user)) {
       return res.status(403).json({
         success: false,
         error: "Not authorized",
@@ -122,6 +178,7 @@ router.delete("/bulk/delete", requireAdminUser, async (req, res) => {
     });
   }
 });
+
 router.get("/:bookingId", requireAdminUser, async (req, res) => {
   try {
     const user = req.adminUser;
@@ -159,6 +216,7 @@ router.get("/:bookingId", requireAdminUser, async (req, res) => {
     });
   }
 });
+
 // 更新订单状态
 router.patch("/:bookingId/status", requireAdminUser, async (req, res) => {
   try {
@@ -216,6 +274,7 @@ router.patch("/:bookingId/status", requireAdminUser, async (req, res) => {
     });
   }
 });
+
 // 更新付款状态
 router.patch("/:bookingId/payment-status", requireAdminUser, async (req, res) => {
   try {
@@ -288,6 +347,7 @@ router.patch("/:bookingId/payment-status", requireAdminUser, async (req, res) =>
     });
   }
 });
+
 // 更新订单 event，并重新计算价格
 router.patch("/:bookingId/event", requireAdminUser, async (req, res) => {
   try {
@@ -373,6 +433,7 @@ router.patch("/:bookingId/event", requireAdminUser, async (req, res) => {
     });
   }
 });
+
 // 更新 proteins / add-ons，并重新计算价格
 router.patch("/:bookingId/selection", requireAdminUser, async (req, res) => {
   try {
@@ -452,6 +513,7 @@ router.patch("/:bookingId/selection", requireAdminUser, async (req, res) => {
     });
   }
 });
+
 router.post("/:bookingId/resend", requireAdminUser, async (req, res) => {
   try {
     const user = req.adminUser;
@@ -494,14 +556,13 @@ router.post("/:bookingId/resend", requireAdminUser, async (req, res) => {
     });
   }
 });
+
 router.patch("/:bookingId/archive", requireAdminUser, async (req, res) => {
   try {
+    const user = req.adminUser;
     const { bookingId } = req.params;
-    const { adminEmail } = req.query;
 
-    const SUPER_ADMINS = ["shuilin9108@gmail.com", "admin@shuilink.com"];
-
-    if (!SUPER_ADMINS.includes(adminEmail)) {
+    if (!isPlatformAdmin(user)) {
       return res.status(403).json({
         success: false,
         error: "Not authorized",
@@ -513,7 +574,8 @@ router.patch("/:bookingId/archive", requireAdminUser, async (req, res) => {
       {
         archived: true,
         archivedAt: new Date(),
-        archivedBy: adminEmail,
+        archivedBy: user.email,
+        updatedAt: new Date().toISOString(),
       },
       { new: true }
     );
@@ -524,6 +586,8 @@ router.patch("/:bookingId/archive", requireAdminUser, async (req, res) => {
         error: "Booking not found",
       });
     }
+
+    
 
     return res.json({
       success: true,
@@ -539,12 +603,10 @@ router.patch("/:bookingId/archive", requireAdminUser, async (req, res) => {
 
 router.delete("/:bookingId", requireAdminUser, async (req, res) => {
   try {
+    const user = req.adminUser;
     const { bookingId } = req.params;
-    const { adminEmail } = req.query;
 
-    const SUPER_ADMINS = ["shuilin9108@gmail.com", "admin@shuilink.com"];
-
-    if (!SUPER_ADMINS.includes(adminEmail)) {
+    if (!isPlatformAdmin(user)) {
       return res.status(403).json({
         success: false,
         error: "Not authorized",

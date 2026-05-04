@@ -3,34 +3,84 @@
 const adminUsers = [
   {
     email: "shuilin9108@gmail.com",
-    role: "admin",
+    role: "platform_admin",
     merchantSlugs: ["*"],
     name: "Shui Lin",
   },
   {
     email: "admin@shuilink.com",
-    role: "admin",
+    role: "platform_admin",
     merchantSlugs: ["*"],
     name: "ShuiLink Admin",
+  },
+  {
+    email: "hibachifinder@gmail.com",
+    role: "platform_admin",
+    merchantSlugs: ["*"],
+    name: "HibachiFinder Admin",
   },
 
   {
     email: "a1hibachiparty@gmail.com",
-    role: "owner",
+    role: "merchant_owner",
     merchantSlugs: ["a1hibachiparty"],
     name: "A1 Hibachi Party Owner",
   },
   {
+    email: "yuangao202121@gmail.com",
+    role: "merchant_staff",
+    merchantSlugs: ["a1hibachiparty"],
+    name: "A1 Hibachi Party Staff",
+  },
+  {
+    email: "shuilin0823@gmail.com",
+    role: "assigned_chef",
+    merchantSlugs: ["a1hibachiparty"],
+    name: "A1 Hibachi Party Chef",
+  },
+
+  {
     email: "kobehibachicatering@gmail.com",
-    role: "owner",
+    role: "merchant_owner",
     merchantSlugs: ["kobe"],
     name: "Kobe Hibachi Owner",
   },
   {
+    email: "zjxinnn@gmail.com",
+    role: "merchant_staff",
+    merchantSlugs: ["kobe"],
+    name: "Kobe Hibachi Staff",
+  },
+  {
+    email: "jasonzheng2016@gmail.com",
+    role: "merchant_staff",
+    merchantSlugs: ["kobe"],
+    name: "Kobe Hibachi Staff",
+  },
+  {
+    email: "shui.lin@stonybrook.edu",
+    role: "assigned_chef",
+    merchantSlugs: ["kobe"],
+    name: "Kobe Hibachi Chef",
+  },
+
+  {
     email: "hibachinearby@gmail.com",
-    role: "owner",
+    role: "merchant_owner",
     merchantSlugs: ["hibachinearby"],
     name: "HibachiNearby Owner",
+  },
+  {
+    email: "2235869122@qq.com",
+    role: "merchant_staff",
+    merchantSlugs: ["hibachinearby"],
+    name: "HibachiNearby Staff",
+  },
+  {
+    email: "274530127@qq.com",
+    role: "assigned_chef",
+    merchantSlugs: ["hibachinearby"],
+    name: "HibachiNearby Chef",
   },
 ];
 
@@ -51,7 +101,7 @@ function getAdminUserByEmail(email) {
 function canAccessMerchant(user, merchantSlug) {
   if (!user || !merchantSlug) return false;
 
-  if (user.role === "admin") return true;
+  if (user.role === "platform_admin") return true;
 
   return user.merchantSlugs.includes(merchantSlug);
 }

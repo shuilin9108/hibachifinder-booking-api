@@ -47,6 +47,11 @@ const bookingSchema = new mongoose.Schema(
       default: {},
     },
 
+    assignedChefEmail: {
+      type: String,
+      default: null,
+    },
+
     pricingSnapshot: {
       type: Object,
       default: {},

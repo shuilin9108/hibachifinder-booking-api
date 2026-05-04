@@ -1,27 +1,34 @@
 // 负责校验后台用户身份，并根据邮箱识别 admin / owner / staff 权限。
+const AdminUser = require("../models/AdminUser");
 
-const { getAdminUserByEmail } = require("../data/adminUsers");
+async function requireAdminUser(req, res, next) {
+  try {
+    const adminEmail = String(req.query.adminEmail || "").trim().toLowerCase();
 
-function requireAdminUser(req, res, next) {
-  const email =
-    req.headers["x-admin-email"] ||
-    req.query.adminEmail ||
-    req.body?.adminEmail ||
-    "";
+    if (!adminEmail) {
+      return res.status(401).json({
+        success: false,
+        error: "Missing adminEmail",
+      });
+    }
 
-  const user = getAdminUserByEmail(email);
+    const user = await AdminUser.findOne({ email: adminEmail });
 
-  if (!user) {
-    return res.status(401).json({
+    if (!user || !user.isActive) {
+      return res.status(403).json({
+        success: false,
+        error: "Unauthorized",
+      });
+    }
+
+    req.adminUser = user;
+    next();
+  } catch (err) {
+    return res.status(500).json({
       success: false,
-      error: "Unauthorized admin user.",
+      error: "Auth failed",
     });
   }
-
-  req.adminUser = user;
-  next();
 }
 
-module.exports = {
-  requireAdminUser,
-};
+module.exports = { requireAdminUser };
