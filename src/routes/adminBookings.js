@@ -412,5 +412,82 @@ router.post("/:bookingId/resend", requireAdminUser, async (req, res) => {
     });
   }
 });
+router.patch("/:bookingId/archive", requireAdminUser, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { adminEmail } = req.query;
+
+    const SUPER_ADMINS = ["shuilin9108@gmail.com", "admin@shuilink.com"];
+
+    if (!SUPER_ADMINS.includes(adminEmail)) {
+      return res.status(403).json({
+        success: false,
+        error: "Not authorized",
+      });
+    }
+
+    const booking = await Booking.findOneAndUpdate(
+      { bookingId },
+      {
+        archived: true,
+        archivedAt: new Date(),
+        archivedBy: adminEmail,
+      },
+      { new: true }
+    );
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        error: "Booking not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      booking,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: "Archive failed",
+    });
+  }
+});
+
+router.delete("/:bookingId", requireAdminUser, async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { adminEmail } = req.query;
+
+    const SUPER_ADMINS = ["shuilin9108@gmail.com", "admin@shuilink.com"];
+
+    if (!SUPER_ADMINS.includes(adminEmail)) {
+      return res.status(403).json({
+        success: false,
+        error: "Not authorized",
+      });
+    }
+
+    const booking = await Booking.findOneAndDelete({ bookingId });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        error: "Booking not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Booking deleted",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: "Delete failed",
+    });
+  }
+});
 
 module.exports = router;

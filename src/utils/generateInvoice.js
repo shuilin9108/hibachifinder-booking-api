@@ -223,10 +223,14 @@ function generateInvoiceBuffer(booking) {
     const bookingId = booking?.bookingId || "";
     const createdAt = booking?.createdAt || "";
 
-    const customerName = buildCustomerName(customer);
-    const fullAddress = buildAddress(address);
+const customerName = buildCustomerName(customer);
+const fullAddress = buildAddress(address);
 
-    const addOnsDetails = pricing?.addOnsDetails || "None";
+const adultCount = Number(event?.adultCount || pricing?.adultCount || 0);
+const kidCount = Number(event?.kidCount || pricing?.kidCount || 0);
+const guestCount = Number(event?.guestCount || adultCount + kidCount);
+
+const addOnsDetails = pricing?.addOnsDetails || "None";
 
     const adultProteins =
       selection?.mealDecision === "now"
@@ -379,15 +383,15 @@ const remainingAfterDeposit =
       fontSize: 8.3,
       labelWidth: 78,
     });
-    y2 = drawKeyValue(doc, "Guests", event?.guestCount || 0, rightX + 12, y2, colWidth - 24, {
+    y2 = drawKeyValue(doc, "Guests", guestCount, rightX + 12, y2, colWidth - 24, {
       fontSize: 8.3,
       labelWidth: 78,
     });
-    y2 = drawKeyValue(doc, "Adults", event?.adultCount || 0, rightX + 12, y2, colWidth - 24, {
+    y2 = drawKeyValue(doc, "Adults", adultCount, rightX + 12, y2, colWidth - 24, {
       fontSize: 8.3,
       labelWidth: 78,
     });
-    y2 = drawKeyValue(doc, "Kids", event?.kidCount || 0, rightX + 12, y2, colWidth - 24, {
+    y2 = drawKeyValue(doc, "Kids", kidCount, rightX + 12, y2, colWidth - 24, {
       fontSize: 8.3,
       labelWidth: 78,
     });
