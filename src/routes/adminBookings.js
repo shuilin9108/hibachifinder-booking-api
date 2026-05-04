@@ -18,18 +18,18 @@ router.get("/", requireAdminUser, async (req, res) => {
     const user = req.adminUser;
     const query = {};
 
-if (isPlatformAdmin(user)) {
-  // 全部订单
-} else if (user.role === "merchant_owner" || user.role === "merchant_staff") {
-  query.merchantSlug = { $in: user.merchantSlugs || [] };
-} else if (user.role === "assigned_chef") {
-  query.assignedChefEmail = user.email;
-} else {
-  return res.status(403).json({
-    success: false,
-    error: "Forbidden",
-  });
-}
+    if (isPlatformAdmin(user)) {
+      // 全部订单
+    } else if (user.role === "merchant_owner" || user.role === "merchant_staff") {
+      query.merchantSlug = { $in: user.merchantSlugs || [] };
+    } else if (user.role === "assigned_chef") {
+      query.assignedChefEmail = user.email;
+    } else {
+      return res.status(403).json({
+        success: false,
+        error: "Forbidden",
+      });
+    }
 
     const bookings = await Booking.find(query)
       .sort({ createdAt: -1 })
@@ -98,7 +98,12 @@ router.patch("/:bookingId/assign-chef", requireAdminUser, async (req, res) => {
   try {
     const user = req.adminUser;
 
-    if (!isPlatformAdmin(user) && user.role !== "merchant_owner") {
+    const canAssignChef =
+      isPlatformAdmin(user) ||
+      user.role === "merchant_owner" ||
+      user.role === "merchant_staff";
+
+    if (!canAssignChef) {
       return res.status(403).json({
         success: false,
         error: "Not authorized",
@@ -587,7 +592,7 @@ router.patch("/:bookingId/archive", requireAdminUser, async (req, res) => {
       });
     }
 
-    
+
 
     return res.json({
       success: true,
