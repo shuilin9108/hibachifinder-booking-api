@@ -2,7 +2,8 @@
 
 const express = require("express");
 const router = express.Router();
-
+const { calculatePricing } = require("../core/pricing/pricingEngine");
+const getMerchantConfig = require("../core/merchants/getMerchantConfig");
 const { requireAdminUser } = require("../middleware/adminAuth");
 const { canAccessMerchant } = require("../data/adminUsers");
 const { sendBookingEmails } = require("../services/bookingEmailService");
@@ -201,6 +202,91 @@ router.patch("/:bookingId/payment-status", requireAdminUser, async (req, res) =>
     return res.status(500).json({
       success: false,
       error: "Failed to update payment status",
+      details: error.message,
+    });
+  }
+});
+// 更新订单 event，并重新计算价格
+router.patch("/:bookingId/event", requireAdminUser, async (req, res) => {
+  try {
+    const user = req.adminUser;
+    const { event } = req.body;
+
+    const bookingDoc = await Booking.findOne({
+      bookingId: req.params.bookingId,
+    });
+
+    if (!bookingDoc) {
+      return res.status(404).json({
+        success: false,
+        error: "Booking not found",
+      });
+    }
+
+    if (!canAccessMerchant(user, bookingDoc.merchantSlug)) {
+      return res.status(403).json({
+        success: false,
+        error: "Forbidden",
+      });
+    }
+
+    const adultCount = Number(event?.adultCount || 0);
+    const kidCount = Number(event?.kidCount || 0);
+
+    bookingDoc.event = {
+      ...(bookingDoc.event || {}),
+      ...(event || {}),
+      adultCount,
+      kidCount,
+      guestCount: adultCount + kidCount,
+      travelMiles: Number(event?.travelMiles || 0),
+      address: {
+        ...(bookingDoc.event?.address || {}),
+        ...(event?.address || {}),
+      },
+    };
+
+    const merchant = getMerchantConfig(bookingDoc.merchantSlug);
+
+    const formForPricing = {
+      customer: bookingDoc.customer || {},
+      event: bookingDoc.event || {},
+      selection: bookingDoc.selection || {},
+      shared: bookingDoc.shared || {},
+      food: bookingDoc.food || {},
+      merchantSpecific: bookingDoc.merchantSpecific || {},
+      notes: bookingDoc.notes || "",
+      addOns: bookingDoc.selection?.addOns || {},
+    };
+
+    const recalculatedPricing = calculatePricing(formForPricing, merchant);
+
+    bookingDoc.pricingSnapshot = {
+      ...(bookingDoc.pricingSnapshot || {}),
+      ...recalculatedPricing,
+      totalPrice: Number(
+        recalculatedPricing.total || recalculatedPricing.totalPrice || 0
+      ),
+      total: Number(
+        recalculatedPricing.total || recalculatedPricing.totalPrice || 0
+      ),
+    };
+
+    bookingDoc.updatedAt = new Date().toISOString();
+
+    await bookingDoc.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Event updated and pricing recalculated.",
+      booking: bookingDoc.toObject(),
+    });
+  } catch (error) {
+    console.error("UPDATE EVENT ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: "Failed to update event",
       details: error.message,
     });
   }
