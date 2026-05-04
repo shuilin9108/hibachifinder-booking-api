@@ -1,5 +1,6 @@
-// 负责校验后台用户身份，并根据邮箱识别 admin / owner / staff 权限。
+// 负责校验后台用户身份，并根据邮箱识别 platform_admin / merchant_owner / staff / chef 权限。
 const AdminUser = require("../models/AdminUser");
+const { getAdminUserByEmail } = require("../data/adminUsers");
 
 async function requireAdminUser(req, res, next) {
   try {
@@ -12,21 +13,37 @@ async function requireAdminUser(req, res, next) {
       });
     }
 
-    const user = await AdminUser.findOne({ email: adminEmail });
+    // 1. 优先查 MongoDB
+    let user = await AdminUser.findOne({ email: adminEmail }).lean();
 
-    if (!user || !user.isActive) {
+    // 2. 如果线上 MongoDB 没有这个用户，fallback 到本地白名单
+    if (!user) {
+      user = getAdminUserByEmail(adminEmail);
+    }
+
+    if (!user || user.isActive === false) {
       return res.status(403).json({
         success: false,
         error: "Unauthorized",
       });
     }
 
-    req.adminUser = user;
+    req.adminUser = {
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      merchantSlugs: user.merchantSlugs || [],
+      isActive: user.isActive !== false,
+    };
+
     next();
   } catch (err) {
+    console.error("ADMIN AUTH ERROR:", err);
+
     return res.status(500).json({
       success: false,
       error: "Auth failed",
+      details: err.message,
     });
   }
 }
