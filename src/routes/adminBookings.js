@@ -291,7 +291,85 @@ router.patch("/:bookingId/event", requireAdminUser, async (req, res) => {
     });
   }
 });
+// 更新 proteins / add-ons，并重新计算价格
+router.patch("/:bookingId/selection", requireAdminUser, async (req, res) => {
+  try {
+    const user = req.adminUser;
+    const { selection } = req.body;
 
+    const bookingDoc = await Booking.findOne({
+      bookingId: req.params.bookingId,
+    });
+
+    if (!bookingDoc) {
+      return res.status(404).json({
+        success: false,
+        error: "Booking not found",
+      });
+    }
+
+    if (!canAccessMerchant(user, bookingDoc.merchantSlug)) {
+      return res.status(403).json({
+        success: false,
+        error: "Forbidden",
+      });
+    }
+
+    bookingDoc.selection = {
+      ...(bookingDoc.selection || {}),
+      ...(selection || {}),
+      proteins: {
+        adult: selection?.proteins?.adult || {},
+        kid: selection?.proteins?.kid || {},
+      },
+      addOns: selection?.addOns || {},
+    };
+
+    const merchant = getMerchantConfig(bookingDoc.merchantSlug);
+
+    const formForPricing = {
+      customer: bookingDoc.customer || {},
+      event: bookingDoc.event || {},
+      selection: bookingDoc.selection || {},
+      shared: bookingDoc.shared || {},
+      food: bookingDoc.food || {},
+      merchantSpecific: bookingDoc.merchantSpecific || {},
+      notes: bookingDoc.notes || "",
+      addOns: bookingDoc.selection?.addOns || {},
+    };
+
+    const recalculatedPricing = calculatePricing(formForPricing, merchant);
+
+    bookingDoc.pricingSnapshot = {
+      ...(bookingDoc.pricingSnapshot || {}),
+      ...recalculatedPricing,
+      totalPrice: Number(
+        recalculatedPricing.total || recalculatedPricing.totalPrice || 0
+      ),
+      total: Number(
+        recalculatedPricing.total || recalculatedPricing.totalPrice || 0
+      ),
+    };
+
+    bookingDoc.updatedAt = new Date().toISOString();
+
+    await bookingDoc.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Selections updated and pricing recalculated.",
+      booking: bookingDoc.toObject(),
+    });
+  } catch (error) {
+    console.error("UPDATE SELECTION ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: "Failed to update selections",
+      details: error.message,
+    });
+  }
+});
 router.post("/:bookingId/resend", requireAdminUser, async (req, res) => {
   try {
     const user = req.adminUser;
