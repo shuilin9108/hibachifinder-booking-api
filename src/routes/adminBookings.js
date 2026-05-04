@@ -38,7 +38,90 @@ router.get("/", requireAdminUser, async (req, res) => {
     });
   }
 });
+router.patch("/bulk/archive", requireAdminUser, async (req, res) => {
+  try {
+    const user = req.adminUser;
+    const { adminEmail } = req.query;
+    const { bookingIds } = req.body;
 
+    const SUPER_ADMINS = ["shuilin9108@gmail.com", "admin@shuilink.com"];
+
+    if (user.role !== "admin" || !SUPER_ADMINS.includes(adminEmail)) {
+      return res.status(403).json({
+        success: false,
+        error: "Not authorized",
+      });
+    }
+
+    if (!Array.isArray(bookingIds) || bookingIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "No booking IDs provided",
+      });
+    }
+
+    const result = await Booking.updateMany(
+      { bookingId: { $in: bookingIds } },
+      {
+        archived: true,
+        archivedAt: new Date(),
+        archivedBy: adminEmail,
+        updatedAt: new Date().toISOString(),
+      }
+    );
+
+    return res.json({
+      success: true,
+      message: "Bookings archived",
+      count: result.modifiedCount || 0,
+    });
+  } catch (err) {
+    console.error("BULK ARCHIVE ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Bulk archive failed",
+    });
+  }
+});
+router.delete("/bulk/delete", requireAdminUser, async (req, res) => {
+  try {
+    const user = req.adminUser;
+    const { adminEmail } = req.query;
+    const { bookingIds } = req.body;
+
+    const SUPER_ADMINS = ["shuilin9108@gmail.com", "admin@shuilink.com"];
+
+    if (user.role !== "admin" || !SUPER_ADMINS.includes(adminEmail)) {
+      return res.status(403).json({
+        success: false,
+        error: "Not authorized",
+      });
+    }
+
+    if (!Array.isArray(bookingIds) || bookingIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "No booking IDs provided",
+      });
+    }
+
+    const result = await Booking.deleteMany({
+      bookingId: { $in: bookingIds },
+    });
+
+    return res.json({
+      success: true,
+      message: "Bookings deleted",
+      count: result.deletedCount || 0,
+    });
+  } catch (err) {
+    console.error("BULK DELETE ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Bulk delete failed",
+    });
+  }
+});
 router.get("/:bookingId", requireAdminUser, async (req, res) => {
   try {
     const user = req.adminUser;
@@ -76,7 +159,6 @@ router.get("/:bookingId", requireAdminUser, async (req, res) => {
     });
   }
 });
-
 // 更新订单状态
 router.patch("/:bookingId/status", requireAdminUser, async (req, res) => {
   try {
