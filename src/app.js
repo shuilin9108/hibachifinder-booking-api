@@ -1,5 +1,5 @@
 require("dotenv").config();
-
+const authRoutes = require("./routes/authRoutes");
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -71,6 +71,7 @@ app.use("/api/webhook", webhookRoutes);
 app.use("/api/health", healthRouter);
 app.use("/api/merchants", merchantsRouter);
 app.use("/api/bookings", bookingsRouter);
+app.use("/api/auth", authRoutes);
 
 const adminBookingsRouter = require("./routes/adminBookings");
 app.use("/api/admin/bookings", adminBookingsRouter);
