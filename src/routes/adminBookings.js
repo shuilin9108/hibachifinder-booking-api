@@ -210,6 +210,7 @@ router.get("/:bookingId", requireAdminUser, async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      user,
       booking,
     });
   } catch (error) {
