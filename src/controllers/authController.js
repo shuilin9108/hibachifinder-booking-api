@@ -47,6 +47,7 @@ const adminUser = await findAdminUserByEmail(googleUser.email);
 
     return res.status(500).json({
       message: "Authentication failed",
+      details: err.message,
     });
   }
 }
