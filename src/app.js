@@ -20,7 +20,7 @@ async function connectMongo() {
   }
 
   await mongoose.connect(process.env.MONGODB_URI, {
-    dbName: "test",
+    dbName: process.env.MONGODB_DB_NAME || "hibachifinder",
   });
 
   isConnected = true;
