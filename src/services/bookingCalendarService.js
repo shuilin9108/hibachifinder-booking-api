@@ -303,7 +303,7 @@ async function upsertBookingCalendarEvent(booking, mode = "initial") {
   const url = mode === "invite_chef" ? `${baseUrl}?sendUpdates=all` : baseUrl;
 
   const response = await fetch(url, {
-    method: existingEventId ? "PATCH" : "POST",
+    method: mode === "invite_chef" ? "PUT" : existingEventId ? "PATCH" : "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
