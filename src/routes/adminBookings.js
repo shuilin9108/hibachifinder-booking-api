@@ -138,7 +138,7 @@ await booking.save();
 try {
   const calendarResult = await upsertBookingCalendarEvent(
     booking.toObject(),
-    "updated",
+    assignedChefEmail ? "invite_chef" : "updated",
   );
 
   if (calendarResult?.success && calendarResult?.eventId) {

@@ -294,11 +294,13 @@ async function upsertBookingCalendarEvent(booking, mode = "initial") {
   });
   const existingEventId = getExistingGoogleEventId(booking);
 
-  const url = existingEventId
+  const baseUrl = existingEventId
     ? `${GOOGLE_CALENDAR_API}/calendars/${calendarId}/events/${encodeURIComponent(
         existingEventId,
       )}`
     : `${GOOGLE_CALENDAR_API}/calendars/${calendarId}/events`;
+
+  const url = mode === "invite_chef" ? `${baseUrl}?sendUpdates=all` : baseUrl;
 
   const response = await fetch(url, {
     method: existingEventId ? "PATCH" : "POST",
