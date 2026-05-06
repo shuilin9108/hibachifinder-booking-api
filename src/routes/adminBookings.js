@@ -537,12 +537,12 @@ router.post("/:bookingId/resend", requireAdminUser, async (req, res) => {
 
     const booking = bookingDoc.toObject();
 
-    if (!canAccessMerchant(user, booking.merchantSlug)) {
-      return res.status(403).json({
-        success: false,
-        error: "Forbidden",
-      });
-    }
+if (!isPlatformAdmin(user) && !canAccessMerchant(user, booking.merchantSlug)) {
+  return res.status(403).json({
+    success: false,
+    error: "Forbidden",
+  });
+}
 
     await sendBookingEmails({
       booking,
