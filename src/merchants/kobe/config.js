@@ -56,7 +56,8 @@ const kobeConfig = {
 
 googleCalendar: {
   enabled: true,
-  calendarId: "primary",
+  calendarId:
+    "c_94fcff40fa42b40823b0b8e330c0886f641a2191f559b5379cbde463cdf24084@group.calendar.google.com",
   webhookUrl: "",
 },
 

@@ -55,7 +55,8 @@ const a1hibachipartyConfig = {
 
 googleCalendar: {
   enabled: true,
-  calendarId: "primary",
+  calendarId:
+    "c_b5a5d74b77f681b0831c3091e61b5fb009f8941e4ad3addcdc08f915f5ab90d0@group.calendar.google.com",
   webhookUrl: "",
 },
 

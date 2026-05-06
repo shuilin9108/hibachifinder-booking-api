@@ -57,7 +57,8 @@ const hibachiNearbyConfig = {
 
 googleCalendar: {
   enabled: true,
-  calendarId: "primary",
+  calendarId:
+    "c_1f6fbd89d1b055dd325e253a4eabf1584f7c66543e1ac3cde025e9db0d0a39fe@group.calendar.google.com",
   webhookUrl: "",
 },
     stripe: {
