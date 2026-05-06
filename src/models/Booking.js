@@ -52,6 +52,11 @@ const bookingSchema = new mongoose.Schema(
       default: null,
     },
 
+    calendarSync: {
+      type: Object,
+      default: {},
+    },
+
     pricingSnapshot: {
       type: Object,
       default: {},
@@ -80,4 +85,5 @@ const bookingSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.models.Booking || mongoose.model("Booking", bookingSchema);
+module.exports =
+  mongoose.models.Booking || mongoose.model("Booking", bookingSchema);

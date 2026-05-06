@@ -130,15 +130,42 @@ router.patch("/:bookingId/assign-chef", requireAdminUser, async (req, res) => {
       });
     }
 
-    booking.assignedChefEmail = assignedChefEmail;
-    booking.updatedAt = new Date().toISOString();
+booking.assignedChefEmail = assignedChefEmail;
+booking.updatedAt = new Date().toISOString();
+
+await booking.save();
+
+try {
+  const calendarResult = await upsertBookingCalendarEvent(
+    booking.toObject(),
+    "updated",
+  );
+
+  if (calendarResult?.success && calendarResult?.eventId) {
+    booking.googleCalendarEventId = calendarResult.eventId;
+    booking.googleCalendarHtmlLink = calendarResult.htmlLink || "";
+
+    booking.calendarSync = {
+      status: "synced",
+      provider: calendarResult.provider || "google_calendar",
+      eventId: calendarResult.eventId,
+      htmlLink: calendarResult.htmlLink || "",
+      lastSyncedAt: new Date().toISOString(),
+      lastSyncedBy: user.email,
+      mode: "assign_chef",
+      result: calendarResult,
+    };
 
     await booking.save();
+  }
+} catch (calendarError) {
+  console.error("ASSIGN CHEF CALENDAR SYNC ERROR:", calendarError);
+}
 
-    return res.json({
-      success: true,
-      booking,
-    });
+return res.json({
+  success: true,
+  booking,
+});
   } catch (err) {
     return res.status(500).json({
       success: false,

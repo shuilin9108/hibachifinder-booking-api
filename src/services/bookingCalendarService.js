@@ -99,7 +99,8 @@ function buildBookingCalendarPayload(booking, mode = "initial") {
   const food = booking?.food || {};
   const shared = booking?.shared || {};
   const payment = booking?.payment || {};
-
+  const assignedChefEmail =
+    booking?.assignedChefEmail || "Not assigned";
   const adultProteins =
     selection?.mealDecision === "now"
       ? Object.entries(selection?.proteins?.adult || {})
@@ -185,6 +186,7 @@ function buildBookingCalendarPayload(booking, mode = "initial") {
     `Total Price: ${money(pricing?.totalPrice || pricing?.total || 0)}`,
     `Deposit Amount: ${money(pricing?.deposit || 0)}`,
     `Deposit Status: ${payment?.depositStatus || "not_paid"}`,
+    `Assigned Chef: ${assignedChefEmail}`,
     "",
     `Meal Decision: ${
       selection?.mealDecision === "now"
@@ -247,6 +249,8 @@ function buildGoogleCalendarEvent(payload) {
 function getExistingGoogleEventId(booking) {
   return (
     booking?.googleCalendarEventId ||
+    booking?.calendarSync?.eventId ||
+    booking?.calendarSync?.googleEventId ||
     booking?.calendarEventId ||
     booking?.calendar?.googleEventId ||
     booking?.calendar?.eventId ||
