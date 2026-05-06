@@ -1,19 +1,17 @@
-// 根据商家配置同步 booking 到对应 Google Calendar。
-/*
-以后每个商家 calendar 就在对应 config 改：
-integrations: {
-  googleCalendar: {
-    enabled: true,
-    calendarId: "这个商家的 calendar id",
-    webhookUrl: "这个商家的 calendar webhook",
-  },
-},
-*/
+// 根据商家配置同步 booking 到 Google Calendar API。
+// 现在不再使用 Google Apps Script webhook。
+// .env 需要：
+// GOOGLE_CLIENT_ID=
+// GOOGLE_CLIENT_SECRET=
+// GOOGLE_REFRESH_TOKEN=
 
 const getMerchantConfig = require("../core/merchants/getMerchantConfig");
 
-const DEFAULT_GOOGLE_CALENDAR_WEBHOOK_URL =
-  process.env.GOOGLE_CALENDAR_WEBHOOK_URL || "";
+const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const GOOGLE_CALENDAR_API = "https://www.googleapis.com/calendar/v3";
+
+const DEFAULT_TIMEZONE =
+  process.env.GOOGLE_CALENDAR_TIMEZONE || "America/New_York";
 
 function money(value) {
   return `$${Number(value || 0).toFixed(2)}`;
@@ -23,11 +21,8 @@ function getMerchantFromBooking(booking) {
   return getMerchantConfig(booking?.merchantSlug || "kobe");
 }
 
-function getCalendarWebhookUrl(merchant) {
-  return (
-    merchant?.integrations?.googleCalendar?.webhookUrl ||
-    DEFAULT_GOOGLE_CALENDAR_WEBHOOK_URL
-  );
+function getCalendarId(merchant) {
+  return merchant?.integrations?.googleCalendar?.calendarId || "primary";
 }
 
 function getTravelFeeText(pricing) {
@@ -45,6 +40,54 @@ function getTravelFeeText(pricing) {
   return money(pricing?.travelFee || 0);
 }
 
+function parseEventDateTime(date, time) {
+  if (!date) return null;
+
+  const cleanTime = time || "12:00";
+  const start = new Date(`${date}T${cleanTime}:00`);
+  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+
+  if (Number.isNaN(start.getTime())) return null;
+
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+  };
+}
+
+async function getGoogleAccessToken() {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error("Missing Google OAuth environment variables.");
+  }
+
+  const response = await fetch(GOOGLE_TOKEN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      `Google token refresh failed: ${data.error_description || data.error}`,
+    );
+  }
+
+  return data.access_token;
+}
+
 function buildBookingCalendarPayload(booking, mode = "initial") {
   const merchant = getMerchantFromBooking(booking);
 
@@ -60,18 +103,24 @@ function buildBookingCalendarPayload(booking, mode = "initial") {
   const adultProteins =
     selection?.mealDecision === "now"
       ? Object.entries(selection?.proteins?.adult || {})
-        .filter(([_, qty]) => Number(qty) > 0)
-        .map(([name, qty]) => `${name} x${qty}`)
-        .join(", ") || "None"
+          .filter(([_, qty]) => Number(qty) > 0)
+          .map(([name, qty]) => `${name} x${qty}`)
+          .join(", ") || "None"
       : "TBD";
 
   const kidProteins =
     selection?.mealDecision === "now"
       ? Object.entries(selection?.proteins?.kid || {})
-        .filter(([_, qty]) => Number(qty) > 0)
-        .map(([name, qty]) => `${name} x${qty}`)
-        .join(", ") || "None"
+          .filter(([_, qty]) => Number(qty) > 0)
+          .map(([name, qty]) => `${name} x${qty}`)
+          .join(", ") || "None"
       : "TBD";
+
+  const addOns =
+    Object.entries(selection?.addOns || {})
+      .filter(([_, qty]) => Number(qty) > 0)
+      .map(([name, qty]) => `${name} x${qty}`)
+      .join(", ") || "None";
 
   const allergies =
     Array.isArray(food?.allergies) && food.allergies.length > 0
@@ -88,16 +137,28 @@ function buildBookingCalendarPayload(booking, mode = "initial") {
   let statusLabel = "NEW BOOKING";
   if (mode === "updated") statusLabel = "UPDATED BOOKING";
   if (mode === "deposit_paid") statusLabel = "DEPOSIT PAID";
+  if (mode === "manual_sync") statusLabel = "SYNCED BOOKING";
 
   const merchantName =
     merchant?.branding?.businessName ||
     merchant?.business?.name ||
     booking?.merchantSlug ||
     "Booking";
-  const title = `${statusLabel} - ${merchantName} - ${customer?.name || "Unknown"
-    } - ${guestCount} guests`;
+
+  const title = `${statusLabel} - ${merchantName} - ${
+    customer?.name || "Unknown"
+  } - ${guestCount} guests`;
 
   const travelFeeText = getTravelFeeText(pricing);
+
+  const location = [
+    address?.street,
+    address?.city,
+    address?.state,
+    address?.zipCode,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   const descriptionLines = [
     `Merchant: ${merchantName}`,
@@ -111,8 +172,7 @@ function buildBookingCalendarPayload(booking, mode = "initial") {
     "",
     `Event Date: ${event?.date || ""}`,
     `Event Time: ${event?.time || ""}`,
-    `Address: ${address?.street || ""}, ${address?.city || ""}, ${address?.state || ""
-    } ${address?.zipCode || ""}`,
+    `Address: ${location || ""}`,
     `Guests: ${guestCount}`,
     `Adults: ${event?.adultCount || 0}`,
     `Kids: ${event?.kidCount || 0}`,
@@ -126,12 +186,14 @@ function buildBookingCalendarPayload(booking, mode = "initial") {
     `Deposit Amount: ${money(pricing?.deposit || 0)}`,
     `Deposit Status: ${payment?.depositStatus || "not_paid"}`,
     "",
-    `Meal Decision: ${selection?.mealDecision === "now"
-      ? "Protein selections were provided"
-      : "Protein selections will be confirmed later by staff"
+    `Meal Decision: ${
+      selection?.mealDecision === "now"
+        ? "Protein selections were provided"
+        : "Protein selections will be confirmed later by staff"
     }`,
     `Adult Proteins: ${adultProteins}`,
     `Kid Proteins: ${kidProteins}`,
+    `Add-ons: ${addOns}`,
     "",
     `Allergies: ${allergies}`,
     `Special Requests: ${shared?.specialRequests || "None"}`,
@@ -142,16 +204,54 @@ function buildBookingCalendarPayload(booking, mode = "initial") {
   return {
     merchantSlug: booking?.merchantSlug || "",
     merchantName,
-    calendarId: merchant?.integrations?.googleCalendar?.calendarId || "",
+    calendarId: getCalendarId(merchant),
     bookingId: booking?.bookingId || "",
     mode,
     title,
     date: event?.date || "",
     time: event?.time || "",
-    location: `${address?.street || ""}, ${address?.city || ""}, ${address?.state || ""
-      } ${address?.zipCode || ""}`.trim(),
+    location,
     description: descriptionLines.join("\n"),
   };
+}
+
+function buildGoogleCalendarEvent(payload) {
+  const dateTime = parseEventDateTime(payload.date, payload.time);
+
+  if (!dateTime) {
+    throw new Error("Missing or invalid event date/time.");
+  }
+
+  return {
+    summary: payload.title,
+    location: payload.location || "",
+    description: payload.description || "",
+    start: {
+      dateTime: dateTime.start,
+      timeZone: DEFAULT_TIMEZONE,
+    },
+    end: {
+      dateTime: dateTime.end,
+      timeZone: DEFAULT_TIMEZONE,
+    },
+    extendedProperties: {
+      private: {
+        bookingId: payload.bookingId,
+        merchantSlug: payload.merchantSlug,
+        mode: payload.mode,
+      },
+    },
+  };
+}
+
+function getExistingGoogleEventId(booking) {
+  return (
+    booking?.googleCalendarEventId ||
+    booking?.calendarEventId ||
+    booking?.calendar?.googleEventId ||
+    booking?.calendar?.eventId ||
+    ""
+  );
 }
 
 async function upsertBookingCalendarEvent(booking, mode = "initial") {
@@ -160,39 +260,56 @@ async function upsertBookingCalendarEvent(booking, mode = "initial") {
 
   if (calendarConfig.enabled === false) {
     console.warn(
-      `Google Calendar disabled for merchant: ${booking?.merchantSlug || "unknown"}`
+      `Google Calendar disabled for merchant: ${
+        booking?.merchantSlug || "unknown"
+      }`,
     );
-    return { skipped: true, reason: "calendar_disabled" };
+
+    return {
+      success: false,
+      skipped: true,
+      reason: "calendar_disabled",
+    };
   }
 
-  const webhookUrl = getCalendarWebhookUrl(merchant);
-
-  if (!webhookUrl) {
-    console.warn("Google Calendar webhook URL is not configured.");
-    return { skipped: true, reason: "missing_calendar_webhook" };
-  }
-
+  const accessToken = await getGoogleAccessToken();
   const payload = buildBookingCalendarPayload(booking, mode);
+  const calendarId = encodeURIComponent(payload.calendarId || "primary");
+  const googleEvent = buildGoogleCalendarEvent(payload);
+  const existingEventId = getExistingGoogleEventId(booking);
 
-  const response = await fetch(webhookUrl, {
-    method: "POST",
+  const url = existingEventId
+    ? `${GOOGLE_CALENDAR_API}/calendars/${calendarId}/events/${encodeURIComponent(
+        existingEventId,
+      )}`
+    : `${GOOGLE_CALENDAR_API}/calendars/${calendarId}/events`;
+
+  const response = await fetch(url, {
+    method: existingEventId ? "PATCH" : "POST",
     headers: {
-      "Content-Type": "text/plain;charset=utf-8",
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(googleEvent),
   });
 
-  const text = await response.text();
+  const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(`Calendar webhook failed: ${response.status} ${text}`);
+    throw new Error(
+      `Google Calendar sync failed: ${data.error?.message || response.status}`,
+    );
   }
 
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { success: true, raw: text };
-  }
+  return {
+    success: true,
+    provider: "google_calendar",
+    mode,
+    calendarId: payload.calendarId || "primary",
+    eventId: data.id,
+    htmlLink: data.htmlLink,
+    summary: data.summary,
+  };
 }
 
 module.exports = {

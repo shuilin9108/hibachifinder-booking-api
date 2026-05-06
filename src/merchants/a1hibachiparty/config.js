@@ -53,11 +53,11 @@ const a1hibachipartyConfig = {
       webhookUrl: process.env.A1HIBACHIPARTY_GOOGLE_SHEET_WEBHOOK_URL || "",
     },
 
-    googleCalendar: {
-      enabled: false,
-      calendarId: "",
-      webhookUrl: process.env.A1HIBACHIPARTY_GOOGLE_CALENDAR_WEBHOOK_URL || "",
-    },
+googleCalendar: {
+  enabled: true,
+  calendarId: "primary",
+  webhookUrl: "",
+},
 
     stripe: {
       enabled: true,

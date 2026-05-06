@@ -207,18 +207,27 @@ router.post("/:bookingId/calendar-sync", requireAdminUser, async (req, res) => {
       });
     }
 
-    const calendarResult = await upsertBookingCalendarEvent(
-      booking,
-      "manual_sync"
-    );
+const calendarResult = await upsertBookingCalendarEvent(
+  booking,
+  "manual_sync"
+);
 
-    bookingDoc.calendarSync = {
-      status: calendarResult?.skipped ? "skipped" : "synced",
-      reason: calendarResult?.reason || "",
-      lastSyncedAt: new Date().toISOString(),
-      lastSyncedBy: user.email,
-      result: calendarResult,
-    };
+if (calendarResult?.success && calendarResult?.eventId) {
+  bookingDoc.googleCalendarEventId = calendarResult.eventId;
+  bookingDoc.googleCalendarHtmlLink = calendarResult.htmlLink || "";
+}
+
+bookingDoc.calendarSync = {
+  status: calendarResult?.skipped ? "skipped" : "synced",
+  provider: calendarResult?.provider || "google_calendar",
+  eventId: calendarResult?.eventId || bookingDoc.googleCalendarEventId || "",
+  htmlLink:
+    calendarResult?.htmlLink || bookingDoc.googleCalendarHtmlLink || "",
+  reason: calendarResult?.reason || "",
+  lastSyncedAt: new Date().toISOString(),
+  lastSyncedBy: user.email,
+  result: calendarResult,
+};
 
     bookingDoc.updatedAt = new Date().toISOString();
 

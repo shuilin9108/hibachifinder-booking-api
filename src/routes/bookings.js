@@ -468,18 +468,42 @@ router.post("/", async (req, res) => {
   };
 
   bookingStore.set(bookingId, bookingRecord);
-  await Booking.create(bookingRecord);
+const createdBooking = await Booking.create(bookingRecord);
 
-  try {
-    await sendBookingEmails({
-      booking: bookingRecord,
+try {
+  await sendBookingEmails({
+    booking: bookingRecord,
+    mode: "initial",
+  });
+
+  const calendarResult = await upsertBookingCalendarEvent(
+    bookingRecord,
+    "initial",
+  );
+
+  if (calendarResult?.success && calendarResult?.eventId) {
+    createdBooking.googleCalendarEventId = calendarResult.eventId;
+    createdBooking.googleCalendarHtmlLink = calendarResult.htmlLink || "";
+    createdBooking.calendarSync = {
+      status: "synced",
+      provider: "google_calendar",
+      eventId: calendarResult.eventId,
+      htmlLink: calendarResult.htmlLink || "",
+      lastSyncedAt: new Date().toISOString(),
       mode: "initial",
-    });
+    };
+    createdBooking.updatedAt = new Date().toISOString();
 
-    await upsertBookingCalendarEvent(bookingRecord, "initial");
-  } catch (error) {
-    console.error("INITIAL BOOKING SIDE EFFECT ERROR:", error);
+    await createdBooking.save();
+
+    bookingRecord.googleCalendarEventId = calendarResult.eventId;
+    bookingRecord.googleCalendarHtmlLink = calendarResult.htmlLink || "";
+    bookingRecord.calendarSync = createdBooking.calendarSync;
+    bookingStore.set(bookingId, bookingRecord);
   }
+} catch (error) {
+  console.error("INITIAL BOOKING SIDE EFFECT ERROR:", error);
+}
 
   return res.status(201).json({
     success: true,
