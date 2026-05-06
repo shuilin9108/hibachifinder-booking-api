@@ -8,7 +8,7 @@ const { requireAdminUser } = require("../middleware/adminAuth");
 const { canAccessMerchant } = require("../data/adminUsers");
 const { sendBookingEmails } = require("../services/bookingEmailService");
 const Booking = require("../models/Booking");
-
+const { upsertBookingCalendarEvent } = require("../services/bookingCalendarService");
 function isPlatformAdmin(user) {
   return user?.role === "platform_admin";
 }
@@ -180,6 +180,65 @@ router.delete("/bulk/delete", requireAdminUser, async (req, res) => {
     return res.status(500).json({
       success: false,
       error: "Bulk delete failed",
+    });
+  }
+});
+router.post("/:bookingId/calendar-sync", requireAdminUser, async (req, res) => {
+  try {
+    const user = req.adminUser;
+
+    const bookingDoc = await Booking.findOne({
+      bookingId: req.params.bookingId,
+    });
+
+    if (!bookingDoc) {
+      return res.status(404).json({
+        success: false,
+        error: "Booking not found",
+      });
+    }
+
+    const booking = bookingDoc.toObject();
+
+    if (!canAccessMerchant(user, booking.merchantSlug)) {
+      return res.status(403).json({
+        success: false,
+        error: "Forbidden",
+      });
+    }
+
+    const calendarResult = await upsertBookingCalendarEvent(
+      booking,
+      "manual_sync"
+    );
+
+    bookingDoc.calendarSync = {
+      status: calendarResult?.skipped ? "skipped" : "synced",
+      reason: calendarResult?.reason || "",
+      lastSyncedAt: new Date().toISOString(),
+      lastSyncedBy: user.email,
+      result: calendarResult,
+    };
+
+    bookingDoc.updatedAt = new Date().toISOString();
+
+    await bookingDoc.save();
+
+    return res.json({
+      success: true,
+      message: calendarResult?.skipped
+        ? `Calendar sync skipped: ${calendarResult.reason}`
+        : "Calendar synced successfully.",
+      calendarResult,
+      booking: bookingDoc.toObject(),
+    });
+  } catch (err) {
+    console.error("ADMIN CALENDAR SYNC ERROR:", err);
+
+    return res.status(500).json({
+      success: false,
+      error: "Calendar sync failed",
+      details: err.message,
     });
   }
 });
