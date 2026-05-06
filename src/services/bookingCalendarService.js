@@ -99,8 +99,7 @@ function buildBookingCalendarPayload(booking, mode = "initial") {
   const food = booking?.food || {};
   const shared = booking?.shared || {};
   const payment = booking?.payment || {};
-  const assignedChefEmail =
-    booking?.assignedChefEmail || "Not assigned";
+  const assignedChefEmail = booking?.assignedChefEmail || "Not assigned";
   const adultProteins =
     selection?.mealDecision === "now"
       ? Object.entries(selection?.proteins?.adult || {})
@@ -214,17 +213,18 @@ function buildBookingCalendarPayload(booking, mode = "initial") {
     time: event?.time || "",
     location,
     description: descriptionLines.join("\n"),
+    assignedChefEmail: booking?.assignedChefEmail || "",
   };
 }
 
-function buildGoogleCalendarEvent(payload) {
+function buildGoogleCalendarEvent(payload, options = {}) {
   const dateTime = parseEventDateTime(payload.date, payload.time);
 
   if (!dateTime) {
     throw new Error("Missing or invalid event date/time.");
   }
 
-  return {
+  const event = {
     summary: payload.title,
     location: payload.location || "",
     description: payload.description || "",
@@ -244,6 +244,16 @@ function buildGoogleCalendarEvent(payload) {
       },
     },
   };
+
+  if (options.inviteAssignedChef && payload.assignedChefEmail) {
+    event.attendees = [
+      {
+        email: payload.assignedChefEmail,
+      },
+    ];
+  }
+
+  return event;
 }
 
 function getExistingGoogleEventId(booking) {
@@ -279,7 +289,9 @@ async function upsertBookingCalendarEvent(booking, mode = "initial") {
   const accessToken = await getGoogleAccessToken();
   const payload = buildBookingCalendarPayload(booking, mode);
   const calendarId = encodeURIComponent(payload.calendarId || "primary");
-  const googleEvent = buildGoogleCalendarEvent(payload);
+  const googleEvent = buildGoogleCalendarEvent(payload, {
+    inviteAssignedChef: mode === "invite_chef",
+  });
   const existingEventId = getExistingGoogleEventId(booking);
 
   const url = existingEventId
