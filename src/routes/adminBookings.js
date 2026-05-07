@@ -303,11 +303,14 @@ router.get("/:bookingId", requireAdminUser, async (req, res) => {
       });
     }
 
-    return res.status(200).json({
-      success: true,
-      user,
-      booking,
-    });
+return res.status(200).json({
+  success: true,
+  user,
+  booking: {
+    ...booking,
+    merchantConfig: getMerchantConfig(booking.merchantSlug),
+  },
+});
   } catch (error) {
     console.error("ADMIN GET BOOKING ERROR:", error);
     return res.status(500).json({
@@ -476,18 +479,17 @@ router.patch("/:bookingId/event", requireAdminUser, async (req, res) => {
     const adultCount = Number(event?.adultCount || 0);
     const kidCount = Number(event?.kidCount || 0);
 
-    bookingDoc.event = {
-      ...(bookingDoc.event || {}),
-      ...(event || {}),
-      adultCount,
-      kidCount,
-      guestCount: adultCount + kidCount,
-      travelMiles: Number(event?.travelMiles || 0),
-      address: {
-        ...(bookingDoc.event?.address || {}),
-        ...(event?.address || {}),
-      },
-    };
+bookingDoc.event = {
+  ...(bookingDoc.event || {}),
+  ...(event || {}),
+};
+
+if (req.body.selection) {
+  bookingDoc.selection = {
+    ...(bookingDoc.selection || {}),
+    ...(req.body.selection || {}),
+  };
+}
 
     const merchant = getMerchantConfig(bookingDoc.merchantSlug);
 
