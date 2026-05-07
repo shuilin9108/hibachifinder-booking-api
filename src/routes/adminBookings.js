@@ -11,6 +11,9 @@ const Booking = require("../models/Booking");
 const {
   upsertBookingCalendarEvent,
 } = require("../services/bookingCalendarService");
+const {
+  saveBookingPipeline,
+} = require("../services/booking/saveBookingPipeline");
 function isPlatformAdmin(user) {
   return user?.role === "platform_admin";
 }
@@ -644,51 +647,17 @@ router.patch("/:bookingId/save-all", requireAdminUser, async (req, res) => {
       });
     }
 
-    if (event) {
-      bookingDoc.event = {
-        ...(bookingDoc.event || {}),
-        ...(event || {}),
-      };
-    }
+    const pipelineResult = await saveBookingPipeline({
+      booking: bookingDoc.toObject(),
+      updatedEvent: event,
+      updatedSelection: selection,
+    });
 
-    if (selection) {
-      bookingDoc.selection = {
-        ...(bookingDoc.selection || {}),
-        ...(selection || {}),
-        proteins: {
-          adult: selection?.proteins?.adult || {},
-          kid: selection?.proteins?.kid || {},
-        },
-        addOns: selection?.addOns || {},
-      };
-    }
+    const nextBooking = pipelineResult.booking;
 
-    const merchant = getMerchantConfig(bookingDoc.merchantSlug);
-
-    const formForPricing = {
-      customer: bookingDoc.customer || {},
-      event: bookingDoc.event || {},
-      selection: bookingDoc.selection || {},
-      shared: bookingDoc.shared || {},
-      food: bookingDoc.food || {},
-      merchantSpecific: bookingDoc.merchantSpecific || {},
-      notes: bookingDoc.notes || "",
-      addOns: bookingDoc.selection?.addOns || {},
-    };
-
-    const recalculatedPricing = calculatePricing(formForPricing, merchant);
-
-    bookingDoc.pricingSnapshot = {
-      ...(bookingDoc.pricingSnapshot || {}),
-      ...recalculatedPricing,
-      totalPrice: Number(
-        recalculatedPricing.total || recalculatedPricing.totalPrice || 0,
-      ),
-      total: Number(
-        recalculatedPricing.total || recalculatedPricing.totalPrice || 0,
-      ),
-    };
-
+    bookingDoc.event = nextBooking.event;
+    bookingDoc.selection = nextBooking.selection;
+    bookingDoc.pricingSnapshot = nextBooking.pricingSnapshot;
     bookingDoc.updatedAt = new Date().toISOString();
 
     await bookingDoc.save();
@@ -732,6 +701,8 @@ router.patch("/:bookingId/save-all", requireAdminUser, async (req, res) => {
 
       await bookingDoc.save();
     }
+
+    const merchant = getMerchantConfig(bookingDoc.merchantSlug);
 
     return res.status(200).json({
       success: true,
