@@ -216,8 +216,19 @@ function buildBookingCalendarPayload(booking, mode = "initial") {
     assignedChefEmail: booking?.assignedChefEmail || "",
   };
 }
+function buildCalendarAttendees(merchant, payload, options = {}) {
+  const attendees = [];
 
-function buildGoogleCalendarEvent(payload, options = {}) {
+  // Chef should only receive invite for the specific booking assigned to them.
+  if (options.inviteAssignedChef && payload.assignedChefEmail) {
+    attendees.push({
+      email: payload.assignedChefEmail,
+    });
+  }
+
+  return attendees;
+}
+function buildGoogleCalendarEvent(merchant, payload, options = {}) {
   const dateTime = parseEventDateTime(payload.date, payload.time);
 
   if (!dateTime) {
@@ -245,12 +256,10 @@ function buildGoogleCalendarEvent(payload, options = {}) {
     },
   };
 
-  if (options.inviteAssignedChef && payload.assignedChefEmail) {
-    event.attendees = [
-      {
-        email: payload.assignedChefEmail,
-      },
-    ];
+  const attendees = buildCalendarAttendees(merchant, payload, options);
+
+  if (attendees.length > 0) {
+    event.attendees = attendees;
   }
 
   return event;
@@ -289,7 +298,7 @@ async function upsertBookingCalendarEvent(booking, mode = "initial") {
   const accessToken = await getGoogleAccessToken();
   const payload = buildBookingCalendarPayload(booking, mode);
   const calendarId = encodeURIComponent(payload.calendarId || "primary");
-  const googleEvent = buildGoogleCalendarEvent(payload, {
+  const googleEvent = buildGoogleCalendarEvent(merchant, payload, {
     inviteAssignedChef: mode === "invite_chef",
   });
   const existingEventId = getExistingGoogleEventId(booking);
@@ -300,7 +309,12 @@ async function upsertBookingCalendarEvent(booking, mode = "initial") {
       )}`
     : `${GOOGLE_CALENDAR_API}/calendars/${calendarId}/events`;
 
-  const url = mode === "invite_chef" ? `${baseUrl}?sendUpdates=all` : baseUrl;
+  const shouldSendUpdates =
+  mode === "invite_chef";
+
+const url = shouldSendUpdates
+  ? `${baseUrl}?sendUpdates=all`
+  : baseUrl;
 
   const response = await fetch(url, {
     method: mode === "invite_chef" ? "PUT" : existingEventId ? "PATCH" : "POST",
