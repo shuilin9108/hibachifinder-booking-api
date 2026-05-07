@@ -247,7 +247,7 @@ const hibachiNearbyConfig = {
 
     {
       id: "stir-fried-noodles",
-      label: "Stir Fried Noodles",
+      label: "Fried Noodles",
       unitPrice: 5,
       unitLabel: "order",
     },

@@ -609,9 +609,60 @@ function calculatePricing(form, merchant) {
 
     depositMode: merchant?.payment?.depositMode || "none",
     optionalDepositLabel,
+
+    pricingBreakdown: {
+      package: {
+        adultSubtotal,
+        kidSubtotal,
+        total: basePrice,
+      },
+
+      extraProteins: {
+        regularSelections: regularExtraSelections,
+        premiumSelections: premiumExtraSelections,
+        regularTotal: extraRegularProteinTotal,
+        premiumTotal: extraPremiumProteinTotal,
+        total: extraRegularProteinTotal + extraPremiumProteinTotal,
+      },
+
+      upgrades: {
+        proteinUpgradeTotal,
+      },
+
+      addOns: {
+        total: addOnTotal,
+        items: Object.entries(form.addOns || {}).map(([id, quantity]) => ({
+          id,
+          quantity,
+        })),
+      },
+
+      travel: {
+        miles: travelSummary.travelMiles,
+        extraMiles: travelSummary.extraMiles,
+        fee: travelFee,
+        status: travelSummary.travelFeeStatus,
+      },
+
+      discounts: {
+        promoCodeDiscount: appliedPromoDiscount,
+        birthdayDiscount: appliedBirthdayDiscount,
+        total: totalDiscount,
+      },
+
+      tax: {
+        rate: taxRate,
+        amount: tax,
+      },
+
+      totals: {
+        subtotalBeforeDiscount,
+        subtotal,
+        total,
+      },
+    },
   };
 }
-
 module.exports = {
   calculatePricing,
 };

@@ -211,8 +211,7 @@ function generateInvoiceBuffer(booking) {
     const business = merchant?.business || {};
     const branding = merchant?.branding || {};
 
-    const invoiceTitle =
-      branding?.invoiceTitle || "Hibachi Booking Invoice";
+    const invoiceTitle = branding?.invoiceTitle || "Hibachi Booking Invoice";
 
     const merchantName =
       branding?.businessName || business?.name || "Hibachi Booking";
@@ -223,14 +222,14 @@ function generateInvoiceBuffer(booking) {
     const bookingId = booking?.bookingId || "";
     const createdAt = booking?.createdAt || "";
 
-const customerName = buildCustomerName(customer);
-const fullAddress = buildAddress(address);
+    const customerName = buildCustomerName(customer);
+    const fullAddress = buildAddress(address);
 
-const adultCount = Number(event?.adultCount || pricing?.adultCount || 0);
-const kidCount = Number(event?.kidCount || pricing?.kidCount || 0);
-const guestCount = Number(event?.guestCount || adultCount + kidCount);
+    const adultCount = Number(event?.adultCount || pricing?.adultCount || 0);
+    const kidCount = Number(event?.kidCount || pricing?.kidCount || 0);
+    const guestCount = Number(event?.guestCount || adultCount + kidCount);
 
-const addOnsDetails = pricing?.addOnsDetails || "None";
+    const addOnsDetails = pricing?.addOnsDetails || "None";
 
     const adultProteins =
       selection?.mealDecision === "now"
@@ -246,28 +245,28 @@ const addOnsDetails = pricing?.addOnsDetails || "None";
     const discountedSubtotal = Number(pricing?.subtotal || 0);
     const tax = Number(pricing?.tax || 0);
     const totalPrice = Number(pricing?.totalPrice || pricing?.total || 0);
+    const breakdown = pricing?.pricingBreakdown || {};
+    const depositAmount = Number(pricing?.deposit || 50);
 
-const depositAmount = Number(pricing?.deposit || 50);
+    const rawPaymentStatus = payment?.status || "unpaid";
 
-const rawPaymentStatus = payment?.status || "unpaid";
+    const paymentStatusText = formatPaymentStatus(rawPaymentStatus);
 
-const paymentStatusText = formatPaymentStatus(rawPaymentStatus);
+    const depositPaid =
+      rawPaymentStatus === "deposit_paid" ||
+      rawPaymentStatus === "paid_full" ||
+      String(payment?.depositStatus || "").toLowerCase() === "paid";
 
-const depositPaid =
-  rawPaymentStatus === "deposit_paid" ||
-  rawPaymentStatus === "paid_full" ||
-  String(payment?.depositStatus || "").toLowerCase() === "paid";
+    const depositStatusText = depositPaid ? "Paid" : "Unpaid";
 
-const depositStatusText = depositPaid ? "Paid" : "Unpaid";
+    const bookingStatusText = formatBookingStatus(booking?.status);
 
-const bookingStatusText = formatBookingStatus(booking?.status);
-
-const remainingAfterDeposit =
-  rawPaymentStatus === "deposit_paid"
-    ? Math.max(0, totalPrice - depositAmount)
-    : rawPaymentStatus === "paid_full"
-      ? 0
-      : totalPrice;
+    const remainingAfterDeposit =
+      rawPaymentStatus === "deposit_paid"
+        ? Math.max(0, totalPrice - depositAmount)
+        : rawPaymentStatus === "paid_full"
+          ? 0
+          : totalPrice;
 
     const promoCode = shared?.promoCode || "None";
     const promoDiscount = Number(pricing?.promoCodeDiscount || 0);
@@ -321,14 +320,15 @@ const remainingAfterDeposit =
       .fontSize(8)
       .fillColor("#ffffff")
       .text(
-        `${merchantName}${merchantPhone ? " | " + merchantPhone : ""}${merchantEmail ? " | " + merchantEmail : ""
+        `${merchantName}${merchantPhone ? " | " + merchantPhone : ""}${
+          merchantEmail ? " | " + merchantEmail : ""
         }`,
         0,
         38,
         {
           width: pageWidth,
           align: "center",
-        }
+        },
       );
 
     // Top summary cards
@@ -346,51 +346,123 @@ const remainingAfterDeposit =
     let y1 = topY + 12;
     drawCardTitle(doc, "Booking Summary", leftX + 12, y1, colWidth - 24);
     y1 += 20;
-    y1 = drawKeyValue(doc, "Booking ID", bookingId, leftX + 12, y1, colWidth - 24, {
-      fontSize: 8.3,
-      labelWidth: 82,
-      boldValue: false,
-    });
-    y1 = drawKeyValue(doc, "Created At", createdAt, leftX + 12, y1, colWidth - 24, {
-      fontSize: 7.2,
-      labelWidth: 82,
-      boldValue: false,
-    });
+    y1 = drawKeyValue(
+      doc,
+      "Booking ID",
+      bookingId,
+      leftX + 12,
+      y1,
+      colWidth - 24,
+      {
+        fontSize: 8.3,
+        labelWidth: 82,
+        boldValue: false,
+      },
+    );
+    y1 = drawKeyValue(
+      doc,
+      "Created At",
+      createdAt,
+      leftX + 12,
+      y1,
+      colWidth - 24,
+      {
+        fontSize: 7.2,
+        labelWidth: 82,
+        boldValue: false,
+      },
+    );
     y1 += 3;
     drawDivider(doc, leftX + 12, y1, colWidth - 24);
     y1 += 8;
-    y1 = drawKeyValue(doc, "Name", customerName, leftX + 12, y1, colWidth - 24, {
-      fontSize: 8.3,
-      labelWidth: 82,
-    });
-    y1 = drawKeyValue(doc, "Phone", customer?.phone || "", leftX + 12, y1, colWidth - 24, {
-      fontSize: 8.3,
-      labelWidth: 82,
-    });
-    y1 = drawKeyValue(doc, "Email", customer?.email || "", leftX + 12, y1, colWidth - 24, {
-      fontSize: 8.3,
-      labelWidth: 82,
-    });
+    y1 = drawKeyValue(
+      doc,
+      "Name",
+      customerName,
+      leftX + 12,
+      y1,
+      colWidth - 24,
+      {
+        fontSize: 8.3,
+        labelWidth: 82,
+      },
+    );
+    y1 = drawKeyValue(
+      doc,
+      "Phone",
+      customer?.phone || "",
+      leftX + 12,
+      y1,
+      colWidth - 24,
+      {
+        fontSize: 8.3,
+        labelWidth: 82,
+      },
+    );
+    y1 = drawKeyValue(
+      doc,
+      "Email",
+      customer?.email || "",
+      leftX + 12,
+      y1,
+      colWidth - 24,
+      {
+        fontSize: 8.3,
+        labelWidth: 82,
+      },
+    );
 
     let y2 = topY + 12;
     drawCardTitle(doc, "Event", rightX + 12, y2, colWidth - 24);
     y2 += 20;
-    y2 = drawKeyValue(doc, "Date", event?.date || "", rightX + 12, y2, colWidth - 24, {
-      fontSize: 8.3,
-      labelWidth: 78,
-    });
-    y2 = drawKeyValue(doc, "Time", event?.time || "", rightX + 12, y2, colWidth - 24, {
-      fontSize: 8.3,
-      labelWidth: 78,
-    });
-    y2 = drawKeyValue(doc, "Guests", guestCount, rightX + 12, y2, colWidth - 24, {
-      fontSize: 8.3,
-      labelWidth: 78,
-    });
-    y2 = drawKeyValue(doc, "Adults", adultCount, rightX + 12, y2, colWidth - 24, {
-      fontSize: 8.3,
-      labelWidth: 78,
-    });
+    y2 = drawKeyValue(
+      doc,
+      "Date",
+      event?.date || "",
+      rightX + 12,
+      y2,
+      colWidth - 24,
+      {
+        fontSize: 8.3,
+        labelWidth: 78,
+      },
+    );
+    y2 = drawKeyValue(
+      doc,
+      "Time",
+      event?.time || "",
+      rightX + 12,
+      y2,
+      colWidth - 24,
+      {
+        fontSize: 8.3,
+        labelWidth: 78,
+      },
+    );
+    y2 = drawKeyValue(
+      doc,
+      "Guests",
+      guestCount,
+      rightX + 12,
+      y2,
+      colWidth - 24,
+      {
+        fontSize: 8.3,
+        labelWidth: 78,
+      },
+    );
+    y2 = drawKeyValue(
+      doc,
+      "Adults",
+      adultCount,
+      rightX + 12,
+      y2,
+      colWidth - 24,
+      {
+        fontSize: 8.3,
+        labelWidth: 78,
+      },
+    );
     y2 = drawKeyValue(doc, "Kids", kidCount, rightX + 12, y2, colWidth - 24, {
       fontSize: 8.3,
       labelWidth: 78,
@@ -412,8 +484,8 @@ const remainingAfterDeposit =
 
     // Pricing + Deposit row
     const row2Y = topY + cardH + 14;
-    const priceCardH = 235;
-    const depositCardH = 235;
+    const priceCardH = 320;
+    const depositCardH = 320;
 
     drawRoundedBox(doc, leftX, row2Y, colWidth, priceCardH);
     drawRoundedBox(doc, rightX, row2Y, colWidth, depositCardH);
@@ -423,36 +495,103 @@ const remainingAfterDeposit =
     pY += 20;
 
     const priceW = colWidth - 24;
-    pY = drawKeyValue(doc, "Package", pricing?.packageName || "", leftX + 12, pY, priceW, {
-      fontSize: 8.2,
-      labelWidth: 100,
-    });
-    pY = drawKeyValue(doc, "Adult Subtotal", money(pricing?.adultSubtotal || 0), leftX + 12, pY, priceW, {
-      fontSize: 8.2,
-      labelWidth: 100,
-    });
-    pY = drawKeyValue(doc, "Kid Subtotal", money(pricing?.kidSubtotal || 0), leftX + 12, pY, priceW, {
-      fontSize: 8.2,
-      labelWidth: 100,
-    });
-    pY = drawKeyValue(doc, "Add-Ons Total", money(pricing?.addOnTotal || 0), leftX + 12, pY, priceW, {
-      fontSize: 8.2,
-      labelWidth: 100,
-    });
-    pY = drawKeyValue(doc, "Protein Upgrade", money(pricing?.proteinUpgradeTotal || 0), leftX + 12, pY, priceW, {
-      fontSize: 8.2,
-      labelWidth: 100,
-    });
-    pY = drawKeyValue(doc, "Travel Miles", `${pricing?.travelMiles || 0} mi`, leftX + 12, pY, priceW, {
-      fontSize: 8.2,
-      labelWidth: 100,
-    });
+    pY = drawKeyValue(
+      doc,
+      "Package",
+      pricing?.packageName || "",
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 8.2,
+        labelWidth: 100,
+      },
+    );
+
+    pY = drawKeyValue(
+      doc,
+      "Adult Subtotal",
+      money(breakdown?.package?.adultSubtotal || 0),
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 8.2,
+        labelWidth: 100,
+      },
+    );
+
+    pY = drawKeyValue(
+      doc,
+      "Kid Subtotal",
+      money(breakdown?.package?.kidSubtotal || 0),
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 8.2,
+        labelWidth: 100,
+      },
+    );
+
+    pY = drawKeyValue(
+      doc,
+      "Extra Proteins",
+      money(breakdown?.extraProteins?.total || 0),
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 8.2,
+        labelWidth: 100,
+      },
+    );
+
+    pY = drawKeyValue(
+      doc,
+      "Add-Ons Total",
+      money(breakdown?.addOns?.total || 0),
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 8.2,
+        labelWidth: 100,
+      },
+    );
+
+    pY = drawKeyValue(
+      doc,
+      "Protein Upgrade",
+      money(breakdown?.upgrades?.proteinUpgradeTotal || 0),
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 8.2,
+        labelWidth: 100,
+      },
+    );
+
+    pY = drawKeyValue(
+      doc,
+      "Travel Miles",
+      `${breakdown?.travel?.miles || 0} mi`,
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 8.2,
+        labelWidth: 100,
+      },
+    );
+
     const travelFeeDisplay =
       pricing?.travelFeeStatus === "manual_review_required" ||
-        pricing?.travelFeeModel === "custom_quote" ||
-        pricing?.travelFeeModel === "manual_only"
+      pricing?.travelFeeModel === "custom_quote" ||
+      pricing?.travelFeeModel === "manual_only"
         ? pricing?.travelFeeLabel || "Travel fee will be confirmed later"
-        : money(pricing?.travelFee || 0);
+        : money(breakdown?.travel?.fee || 0);
 
     pY = drawKeyValue(
       doc,
@@ -467,63 +606,150 @@ const remainingAfterDeposit =
         boldValue: false,
         allowMultiline: true,
         valueAlign: "right",
-      }
+      },
     );
-    pY = drawKeyValue(doc, "Sub Before Disc.", money(subtotalBeforeDiscount), leftX + 12, pY, priceW, {
-      fontSize: 8.2,
-      labelWidth: 100,
-    });
-    pY = drawKeyValue(doc, "Birthday Disc.", `-${money(birthdayDiscount)}`, leftX + 12, pY, priceW, {
-      fontSize: 8.2,
-      labelWidth: 100,
-    });
-    pY = drawKeyValue(doc, "Promo Disc.", `-${money(promoDiscount)}`, leftX + 12, pY, priceW, {
-      fontSize: 8.2,
-      labelWidth: 100,
-    });
-    pY = drawKeyValue(doc, "Discounted Sub", money(discountedSubtotal), leftX + 12, pY, priceW, {
-      fontSize: 8.2,
-      labelWidth: 100,
-    });
-    pY = drawKeyValue(doc, "Estimated Tax", money(tax), leftX + 12, pY, priceW, {
-      fontSize: 8.2,
-      labelWidth: 100,
-    });
-    pY = drawKeyValue(doc, "Total Price", money(totalPrice), leftX + 12, pY, priceW, {
-      fontSize: 8.2,
-      labelWidth: 100,
-      valueColor: "#0f172a",
-    });
+
+    pY = drawKeyValue(
+      doc,
+      "Sub Before Disc.",
+      money(breakdown?.totals?.subtotalBeforeDiscount || 0),
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 8.2,
+        labelWidth: 100,
+      },
+    );
+
+    pY = drawKeyValue(
+      doc,
+      "Birthday Disc.",
+      `-${money(breakdown?.discounts?.birthdayDiscount || 0)}`,
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 8.2,
+        labelWidth: 100,
+      },
+    );
+
+    pY = drawKeyValue(
+      doc,
+      "Promo Disc.",
+      `-${money(breakdown?.discounts?.promoCodeDiscount || 0)}`,
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 8.2,
+        labelWidth: 100,
+      },
+    );
+
+    pY = drawKeyValue(
+      doc,
+      "Discounted Sub",
+      money(breakdown?.totals?.subtotal || 0),
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 8.2,
+        labelWidth: 100,
+      },
+    );
+
+    pY = drawKeyValue(
+      doc,
+      "Estimated Tax",
+      money(breakdown?.tax?.amount || 0),
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 8.2,
+        labelWidth: 100,
+      },
+    );
+
+    pY = drawKeyValue(
+      doc,
+      "Total Price",
+      money(breakdown?.totals?.total || 0),
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 8.2,
+        labelWidth: 100,
+        valueColor: "#0f172a",
+      },
+    );
 
     let dY = row2Y + 12;
     drawCardTitle(doc, "Deposit + Gratuity", rightX + 12, dY, colWidth - 24);
     dY += 20;
 
     const depW = colWidth - 24;
-    dY = drawKeyValue(doc, "Deposit Amt", money(depositAmount), rightX + 12, dY, depW, {
-      fontSize: 8.2,
-      labelWidth: 92,
-    });
-dY = drawKeyValue(doc, "Booking Status", bookingStatusText, rightX + 12, dY, depW, {
-  fontSize: 8.2,
-  labelWidth: 92,
-  valueColor: "#111111",
-});
+    dY = drawKeyValue(
+      doc,
+      "Deposit Amt",
+      money(depositAmount),
+      rightX + 12,
+      dY,
+      depW,
+      {
+        fontSize: 8.2,
+        labelWidth: 92,
+      },
+    );
+    dY = drawKeyValue(
+      doc,
+      "Booking Status",
+      bookingStatusText,
+      rightX + 12,
+      dY,
+      depW,
+      {
+        fontSize: 8.2,
+        labelWidth: 92,
+        valueColor: "#111111",
+      },
+    );
 
-dY = drawKeyValue(doc, "Payment Status", paymentStatusText, rightX + 12, dY, depW, {
-  fontSize: 8.2,
-  labelWidth: 92,
-  valueColor:
-    rawPaymentStatus === "deposit_paid" || rawPaymentStatus === "paid_full"
-      ? "#15803d"
-      : "#b91c1c",
-});
+    dY = drawKeyValue(
+      doc,
+      "Payment Status",
+      paymentStatusText,
+      rightX + 12,
+      dY,
+      depW,
+      {
+        fontSize: 8.2,
+        labelWidth: 92,
+        valueColor:
+          rawPaymentStatus === "deposit_paid" ||
+          rawPaymentStatus === "paid_full"
+            ? "#15803d"
+            : "#b91c1c",
+      },
+    );
 
-dY = drawKeyValue(doc, "Deposit Status", depositStatusText, rightX + 12, dY, depW, {
-  fontSize: 8.2,
-  labelWidth: 92,
-  valueColor: depositPaid ? "#15803d" : "#b91c1c",
-});
+    dY = drawKeyValue(
+      doc,
+      "Deposit Status",
+      depositStatusText,
+      rightX + 12,
+      dY,
+      depW,
+      {
+        fontSize: 8.2,
+        labelWidth: 92,
+        valueColor: depositPaid ? "#15803d" : "#b91c1c",
+      },
+    );
     dY = drawKeyValue(
       doc,
       "Remaining",
@@ -534,7 +760,7 @@ dY = drawKeyValue(doc, "Deposit Status", depositStatusText, rightX + 12, dY, dep
       {
         fontSize: 8.2,
         labelWidth: 92,
-      }
+      },
     );
 
     dY += 4;
@@ -554,7 +780,7 @@ dY = drawKeyValue(doc, "Deposit Status", depositStatusText, rightX + 12, dY, dep
         fontSize: 7.7,
         labelWidth: 34,
         boldValue: false,
-      }
+      },
     );
     dY = drawKeyValue(
       doc,
@@ -567,7 +793,7 @@ dY = drawKeyValue(doc, "Deposit Status", depositStatusText, rightX + 12, dY, dep
         fontSize: 7.7,
         labelWidth: 34,
         boldValue: false,
-      }
+      },
     );
     dY = drawKeyValue(
       doc,
@@ -580,7 +806,7 @@ dY = drawKeyValue(doc, "Deposit Status", depositStatusText, rightX + 12, dY, dep
         fontSize: 7.7,
         labelWidth: 34,
         boldValue: false,
-      }
+      },
     );
 
     dY += 4;
@@ -623,32 +849,64 @@ dY = drawKeyValue(doc, "Deposit Status", depositStatusText, rightX + 12, dY, dep
     const block2X = block1X + threeColW + threeColGap;
     const block3X = block2X + threeColW + threeColGap;
 
-    drawParagraphBlock(doc, "Meal Decision", mealDecisionText, block1X, blockY, threeColW, {
-      titleSize: 8.3,
-      valueSize: 8.2,
-      valueFont: "Helvetica",
-      gapAfterBlock: 0,
-    });
+    drawParagraphBlock(
+      doc,
+      "Meal Decision",
+      mealDecisionText,
+      block1X,
+      blockY,
+      threeColW,
+      {
+        titleSize: 8.3,
+        valueSize: 8.2,
+        valueFont: "Helvetica",
+        gapAfterBlock: 0,
+      },
+    );
 
-    drawParagraphBlock(doc, "Adult Proteins", adultProteins, block2X, blockY, threeColW, {
-      titleSize: 8.3,
-      valueSize: 8.0,
-      gapAfterBlock: 0,
-    });
+    drawParagraphBlock(
+      doc,
+      "Adult Proteins",
+      adultProteins,
+      block2X,
+      blockY,
+      threeColW,
+      {
+        titleSize: 8.3,
+        valueSize: 8.0,
+        gapAfterBlock: 0,
+      },
+    );
 
-    drawParagraphBlock(doc, "Kid Proteins", kidProteins, block3X, blockY, threeColW, {
-      titleSize: 8.3,
-      valueSize: 8.0,
-      gapAfterBlock: 0,
-    });
+    drawParagraphBlock(
+      doc,
+      "Kid Proteins",
+      kidProteins,
+      block3X,
+      blockY,
+      threeColW,
+      {
+        titleSize: 8.3,
+        valueSize: 8.0,
+        gapAfterBlock: 0,
+      },
+    );
 
     const addOnY = row3Y + 82;
     drawDivider(doc, leftX + 12, addOnY, fullW - 24);
-    drawParagraphBlock(doc, "Add-Ons Details", addOnsDetails, leftX + 12, addOnY + 8, fullW - 24, {
-      titleSize: 8.3,
-      valueSize: 8.1,
-      gapAfterBlock: 0,
-    });
+    drawParagraphBlock(
+      doc,
+      "Add-Ons Details",
+      addOnsDetails,
+      leftX + 12,
+      addOnY + 8,
+      fullW - 24,
+      {
+        titleSize: 8.3,
+        valueSize: 8.1,
+        gapAfterBlock: 0,
+      },
+    );
 
     // Additional Information + Notes
     const row4Y = row3Y + selectionsH + 14;
@@ -679,7 +937,7 @@ dY = drawKeyValue(doc, "Deposit Status", depositStatusText, rightX + 12, dY, dep
         fontSize: 8.0,
         labelWidth: 88,
         boldValue: false,
-      }
+      },
     );
     aY = drawKeyValue(
       doc,
@@ -692,7 +950,7 @@ dY = drawKeyValue(doc, "Deposit Status", depositStatusText, rightX + 12, dY, dep
         fontSize: 8.0,
         labelWidth: 88,
         boldValue: false,
-      }
+      },
     );
     aY = drawKeyValue(
       doc,
@@ -705,31 +963,55 @@ dY = drawKeyValue(doc, "Deposit Status", depositStatusText, rightX + 12, dY, dep
         fontSize: 8.0,
         labelWidth: 88,
         boldValue: false,
-      }
+      },
     );
-    aY = drawKeyValue(doc, "Heard About", heardAboutText, leftX + 12, aY, addInfoW, {
-      fontSize: 8.0,
-      labelWidth: 88,
-      boldValue: false,
-    });
+    aY = drawKeyValue(
+      doc,
+      "Heard About",
+      heardAboutText,
+      leftX + 12,
+      aY,
+      addInfoW,
+      {
+        fontSize: 8.0,
+        labelWidth: 88,
+        boldValue: false,
+      },
+    );
 
     let nY = row4Y + 12;
     drawCardTitle(doc, "Notes", rightX + 12, nY, colWidth - 24);
     nY += 18;
 
-    nY = drawParagraphBlock(doc, "Special Requests", specialRequestsText, rightX + 12, nY, colWidth - 24, {
-      titleSize: 8.2,
-      valueSize: 8.1,
-      valueFont: "Helvetica",
-      gapAfterBlock: 8,
-    });
+    nY = drawParagraphBlock(
+      doc,
+      "Special Requests",
+      specialRequestsText,
+      rightX + 12,
+      nY,
+      colWidth - 24,
+      {
+        titleSize: 8.2,
+        valueSize: 8.1,
+        valueFont: "Helvetica",
+        gapAfterBlock: 8,
+      },
+    );
 
-    nY = drawParagraphBlock(doc, "Notes", notesText, rightX + 12, nY, colWidth - 24, {
-      titleSize: 8.2,
-      valueSize: 8.1,
-      valueFont: "Helvetica",
-      gapAfterBlock: 10,
-    });
+    nY = drawParagraphBlock(
+      doc,
+      "Notes",
+      notesText,
+      rightX + 12,
+      nY,
+      colWidth - 24,
+      {
+        titleSize: 8.2,
+        valueSize: 8.1,
+        valueFont: "Helvetica",
+        gapAfterBlock: 10,
+      },
+    );
 
     doc
       .font("Helvetica")
@@ -742,7 +1024,7 @@ dY = drawKeyValue(doc, "Deposit Status", depositStatusText, rightX + 12, dY, dep
         {
           width: colWidth - 24,
           lineGap: 0,
-        }
+        },
       );
 
     doc.end();
