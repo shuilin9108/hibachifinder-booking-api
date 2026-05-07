@@ -1,17 +1,11 @@
 // 统一处理后台 Save All 的 booking 更新、价格重算、PDF、Calendar、Sheets 同步。
 
-const {
-  calculatePricing,
-} = require("../../core/pricing/pricingEngine");
+const { calculatePricing } = require("../../core/pricing/pricingEngine");
 
 const getMerchantConfig = require("../../core/merchants/getMerchantConfig");
 
 async function saveBookingPipeline(options = {}) {
-  const {
-    booking,
-    updatedEvent,
-    updatedSelection,
-  } = options;
+  const { booking, updatedEvent, updatedSelection } = options;
 
   console.log("saveBookingPipeline started");
 
@@ -29,21 +23,20 @@ async function saveBookingPipeline(options = {}) {
     },
   };
 
-  const merchant = getMerchantConfig(
-    nextBooking?.merchantSlug || "kobe",
-  );
+  const merchant = getMerchantConfig(nextBooking?.merchantSlug || "kobe");
 
   const formForPricing = {
-    event: nextBooking.event,
-    selection: nextBooking.selection,
+    customer: nextBooking.customer || {},
+    event: nextBooking.event || {},
+    selection: nextBooking.selection || {},
     shared: nextBooking.shared || {},
     food: nextBooking.food || {},
+    merchantSpecific: nextBooking.merchantSpecific || {},
+    notes: nextBooking.notes || "",
+    addOns: nextBooking.selection?.addOns || {},
   };
 
-  const recalculatedPricing = calculatePricing(
-    formForPricing,
-    merchant,
-  );
+  const recalculatedPricing = calculatePricing(formForPricing, merchant);
 
   nextBooking.pricingSnapshot = {
     ...(nextBooking.pricingSnapshot || {}),
