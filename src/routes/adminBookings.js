@@ -8,7 +8,9 @@ const { requireAdminUser } = require("../middleware/adminAuth");
 const { canAccessMerchant } = require("../data/adminUsers");
 const { sendBookingEmails } = require("../services/bookingEmailService");
 const Booking = require("../models/Booking");
-const { upsertBookingCalendarEvent } = require("../services/bookingCalendarService");
+const {
+  upsertBookingCalendarEvent,
+} = require("../services/bookingCalendarService");
 function isPlatformAdmin(user) {
   return user?.role === "platform_admin";
 }
@@ -20,7 +22,10 @@ router.get("/", requireAdminUser, async (req, res) => {
 
     if (isPlatformAdmin(user)) {
       // 全部订单
-    } else if (user.role === "merchant_owner" || user.role === "merchant_staff") {
+    } else if (
+      user.role === "merchant_owner" ||
+      user.role === "merchant_staff"
+    ) {
       query.merchantSlug = { $in: user.merchantSlugs || [] };
     } else if (user.role === "assigned_chef") {
       query.assignedChefEmail = user.email;
@@ -78,7 +83,7 @@ router.patch("/bulk/archive", requireAdminUser, async (req, res) => {
         archivedAt: new Date(),
         archivedBy: user.email,
         updatedAt: new Date().toISOString(),
-      }
+      },
     );
 
     return res.json({
@@ -123,49 +128,52 @@ router.patch("/:bookingId/assign-chef", requireAdminUser, async (req, res) => {
       });
     }
 
-    if (!isPlatformAdmin(user) && !canAccessMerchant(user, booking.merchantSlug)) {
+    if (
+      !isPlatformAdmin(user) &&
+      !canAccessMerchant(user, booking.merchantSlug)
+    ) {
       return res.status(403).json({
         success: false,
         error: "Forbidden",
       });
     }
 
-booking.assignedChefEmail = assignedChefEmail;
-booking.updatedAt = new Date().toISOString();
-
-await booking.save();
-
-try {
-  const calendarResult = await upsertBookingCalendarEvent(
-    booking.toObject(),
-    assignedChefEmail ? "invite_chef" : "updated",
-  );
-
-  if (calendarResult?.success && calendarResult?.eventId) {
-    booking.googleCalendarEventId = calendarResult.eventId;
-    booking.googleCalendarHtmlLink = calendarResult.htmlLink || "";
-
-    booking.calendarSync = {
-      status: "synced",
-      provider: calendarResult.provider || "google_calendar",
-      eventId: calendarResult.eventId,
-      htmlLink: calendarResult.htmlLink || "",
-      lastSyncedAt: new Date().toISOString(),
-      lastSyncedBy: user.email,
-      mode: "assign_chef",
-      result: calendarResult,
-    };
+    booking.assignedChefEmail = assignedChefEmail;
+    booking.updatedAt = new Date().toISOString();
 
     await booking.save();
-  }
-} catch (calendarError) {
-  console.error("ASSIGN CHEF CALENDAR SYNC ERROR:", calendarError);
-}
 
-return res.json({
-  success: true,
-  booking,
-});
+    try {
+      const calendarResult = await upsertBookingCalendarEvent(
+        booking.toObject(),
+        assignedChefEmail ? "invite_chef" : "updated",
+      );
+
+      if (calendarResult?.success && calendarResult?.eventId) {
+        booking.googleCalendarEventId = calendarResult.eventId;
+        booking.googleCalendarHtmlLink = calendarResult.htmlLink || "";
+
+        booking.calendarSync = {
+          status: "synced",
+          provider: calendarResult.provider || "google_calendar",
+          eventId: calendarResult.eventId,
+          htmlLink: calendarResult.htmlLink || "",
+          lastSyncedAt: new Date().toISOString(),
+          lastSyncedBy: user.email,
+          mode: "assign_chef",
+          result: calendarResult,
+        };
+
+        await booking.save();
+      }
+    } catch (calendarError) {
+      console.error("ASSIGN CHEF CALENDAR SYNC ERROR:", calendarError);
+    }
+
+    return res.json({
+      success: true,
+      booking,
+    });
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -234,27 +242,28 @@ router.post("/:bookingId/calendar-sync", requireAdminUser, async (req, res) => {
       });
     }
 
-const calendarResult = await upsertBookingCalendarEvent(
-  booking,
-  "manual_sync"
-);
+    const calendarResult = await upsertBookingCalendarEvent(
+      booking,
+      "manual_sync",
+    );
 
-if (calendarResult?.success && calendarResult?.eventId) {
-  bookingDoc.googleCalendarEventId = calendarResult.eventId;
-  bookingDoc.googleCalendarHtmlLink = calendarResult.htmlLink || "";
-}
+    if (calendarResult?.success && calendarResult?.eventId) {
+      bookingDoc.googleCalendarEventId = calendarResult.eventId;
+      bookingDoc.googleCalendarHtmlLink = calendarResult.htmlLink || "";
+    }
 
-bookingDoc.calendarSync = {
-  status: calendarResult?.skipped ? "skipped" : "synced",
-  provider: calendarResult?.provider || "google_calendar",
-  eventId: calendarResult?.eventId || bookingDoc.googleCalendarEventId || "",
-  htmlLink:
-    calendarResult?.htmlLink || bookingDoc.googleCalendarHtmlLink || "",
-  reason: calendarResult?.reason || "",
-  lastSyncedAt: new Date().toISOString(),
-  lastSyncedBy: user.email,
-  result: calendarResult,
-};
+    bookingDoc.calendarSync = {
+      status: calendarResult?.skipped ? "skipped" : "synced",
+      provider: calendarResult?.provider || "google_calendar",
+      eventId:
+        calendarResult?.eventId || bookingDoc.googleCalendarEventId || "",
+      htmlLink:
+        calendarResult?.htmlLink || bookingDoc.googleCalendarHtmlLink || "",
+      reason: calendarResult?.reason || "",
+      lastSyncedAt: new Date().toISOString(),
+      lastSyncedBy: user.email,
+      result: calendarResult,
+    };
 
     bookingDoc.updatedAt = new Date().toISOString();
 
@@ -303,14 +312,14 @@ router.get("/:bookingId", requireAdminUser, async (req, res) => {
       });
     }
 
-return res.status(200).json({
-  success: true,
-  user,
-  booking: {
-    ...booking,
-    merchantConfig: getMerchantConfig(booking.merchantSlug),
-  },
-});
+    return res.status(200).json({
+      success: true,
+      user,
+      booking: {
+        ...booking,
+        merchantConfig: getMerchantConfig(booking.merchantSlug),
+      },
+    });
   } catch (error) {
     console.error("ADMIN GET BOOKING ERROR:", error);
     return res.status(500).json({
@@ -327,12 +336,7 @@ router.patch("/:bookingId/status", requireAdminUser, async (req, res) => {
     const user = req.adminUser;
     const { status } = req.body;
 
-    const allowedStatuses = [
-      "pending",
-      "confirmed",
-      "completed",
-      "cancelled",
-    ];
+    const allowedStatuses = ["pending", "confirmed", "completed", "cancelled"];
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
@@ -380,77 +384,77 @@ router.patch("/:bookingId/status", requireAdminUser, async (req, res) => {
 });
 
 // 更新付款状态
-router.patch("/:bookingId/payment-status", requireAdminUser, async (req, res) => {
-  try {
-    const user = req.adminUser;
-    const { paymentStatus } = req.body;
+router.patch(
+  "/:bookingId/payment-status",
+  requireAdminUser,
+  async (req, res) => {
+    try {
+      const user = req.adminUser;
+      const { paymentStatus } = req.body;
 
-    const allowedPaymentStatuses = [
-      "unpaid",
-      "deposit_paid",
-      "paid_full",
-    ];
+      const allowedPaymentStatuses = ["unpaid", "deposit_paid", "paid_full"];
 
-    if (!allowedPaymentStatuses.includes(paymentStatus)) {
-      return res.status(400).json({
+      if (!allowedPaymentStatuses.includes(paymentStatus)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid payment status",
+        });
+      }
+
+      const bookingDoc = await Booking.findOne({
+        bookingId: req.params.bookingId,
+      });
+
+      if (!bookingDoc) {
+        return res.status(404).json({
+          success: false,
+          error: "Booking not found",
+        });
+      }
+
+      if (!canAccessMerchant(user, bookingDoc.merchantSlug)) {
+        return res.status(403).json({
+          success: false,
+          error: "Forbidden",
+        });
+      }
+
+      bookingDoc.payment = {
+        ...(bookingDoc.payment || {}),
+        status: paymentStatus,
+        depositStatus:
+          paymentStatus === "deposit_paid" || paymentStatus === "paid_full"
+            ? "paid"
+            : "unpaid",
+        paidFullAt:
+          paymentStatus === "paid_full"
+            ? new Date().toISOString()
+            : bookingDoc.payment?.paidFullAt,
+        depositPaidAt:
+          paymentStatus === "deposit_paid" || paymentStatus === "paid_full"
+            ? bookingDoc.payment?.depositPaidAt || new Date().toISOString()
+            : bookingDoc.payment?.depositPaidAt,
+      };
+
+      bookingDoc.updatedAt = new Date().toISOString();
+
+      await bookingDoc.save();
+
+      return res.status(200).json({
+        success: true,
+        booking: bookingDoc.toObject(),
+      });
+    } catch (error) {
+      console.error("UPDATE PAYMENT STATUS ERROR:", error);
+
+      return res.status(500).json({
         success: false,
-        error: "Invalid payment status",
+        error: "Failed to update payment status",
+        details: error.message,
       });
     }
-
-    const bookingDoc = await Booking.findOne({
-      bookingId: req.params.bookingId,
-    });
-
-    if (!bookingDoc) {
-      return res.status(404).json({
-        success: false,
-        error: "Booking not found",
-      });
-    }
-
-    if (!canAccessMerchant(user, bookingDoc.merchantSlug)) {
-      return res.status(403).json({
-        success: false,
-        error: "Forbidden",
-      });
-    }
-
-    bookingDoc.payment = {
-      ...(bookingDoc.payment || {}),
-      status: paymentStatus,
-      depositStatus:
-        paymentStatus === "deposit_paid" || paymentStatus === "paid_full"
-          ? "paid"
-          : "unpaid",
-      paidFullAt:
-        paymentStatus === "paid_full"
-          ? new Date().toISOString()
-          : bookingDoc.payment?.paidFullAt,
-      depositPaidAt:
-        paymentStatus === "deposit_paid" || paymentStatus === "paid_full"
-          ? bookingDoc.payment?.depositPaidAt || new Date().toISOString()
-          : bookingDoc.payment?.depositPaidAt,
-    };
-
-    bookingDoc.updatedAt = new Date().toISOString();
-
-    await bookingDoc.save();
-
-    return res.status(200).json({
-      success: true,
-      booking: bookingDoc.toObject(),
-    });
-  } catch (error) {
-    console.error("UPDATE PAYMENT STATUS ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      error: "Failed to update payment status",
-      details: error.message,
-    });
-  }
-});
+  },
+);
 
 // 更新订单 event，并重新计算价格
 router.patch("/:bookingId/event", requireAdminUser, async (req, res) => {
@@ -479,17 +483,17 @@ router.patch("/:bookingId/event", requireAdminUser, async (req, res) => {
     const adultCount = Number(event?.adultCount || 0);
     const kidCount = Number(event?.kidCount || 0);
 
-bookingDoc.event = {
-  ...(bookingDoc.event || {}),
-  ...(event || {}),
-};
+    bookingDoc.event = {
+      ...(bookingDoc.event || {}),
+      ...(event || {}),
+    };
 
-if (req.body.selection) {
-  bookingDoc.selection = {
-    ...(bookingDoc.selection || {}),
-    ...(req.body.selection || {}),
-  };
-}
+    if (req.body.selection) {
+      bookingDoc.selection = {
+        ...(bookingDoc.selection || {}),
+        ...(req.body.selection || {}),
+      };
+    }
 
     const merchant = getMerchantConfig(bookingDoc.merchantSlug);
 
@@ -510,10 +514,10 @@ if (req.body.selection) {
       ...(bookingDoc.pricingSnapshot || {}),
       ...recalculatedPricing,
       totalPrice: Number(
-        recalculatedPricing.total || recalculatedPricing.totalPrice || 0
+        recalculatedPricing.total || recalculatedPricing.totalPrice || 0,
       ),
       total: Number(
-        recalculatedPricing.total || recalculatedPricing.totalPrice || 0
+        recalculatedPricing.total || recalculatedPricing.totalPrice || 0,
       ),
     };
 
@@ -590,10 +594,10 @@ router.patch("/:bookingId/selection", requireAdminUser, async (req, res) => {
       ...(bookingDoc.pricingSnapshot || {}),
       ...recalculatedPricing,
       totalPrice: Number(
-        recalculatedPricing.total || recalculatedPricing.totalPrice || 0
+        recalculatedPricing.total || recalculatedPricing.totalPrice || 0,
       ),
       total: Number(
-        recalculatedPricing.total || recalculatedPricing.totalPrice || 0
+        recalculatedPricing.total || recalculatedPricing.totalPrice || 0,
       ),
     };
 
@@ -616,7 +620,140 @@ router.patch("/:bookingId/selection", requireAdminUser, async (req, res) => {
     });
   }
 });
+// 一键保存后台所有订单修改：event + selection + pricing + calendar，不发送邮件
+router.patch("/:bookingId/save-all", requireAdminUser, async (req, res) => {
+  try {
+    const user = req.adminUser;
+    const { event, selection } = req.body;
 
+    const bookingDoc = await Booking.findOne({
+      bookingId: req.params.bookingId,
+    });
+
+    if (!bookingDoc) {
+      return res.status(404).json({
+        success: false,
+        error: "Booking not found",
+      });
+    }
+
+    if (!canAccessMerchant(user, bookingDoc.merchantSlug)) {
+      return res.status(403).json({
+        success: false,
+        error: "Forbidden",
+      });
+    }
+
+    if (event) {
+      bookingDoc.event = {
+        ...(bookingDoc.event || {}),
+        ...(event || {}),
+      };
+    }
+
+    if (selection) {
+      bookingDoc.selection = {
+        ...(bookingDoc.selection || {}),
+        ...(selection || {}),
+        proteins: {
+          adult: selection?.proteins?.adult || {},
+          kid: selection?.proteins?.kid || {},
+        },
+        addOns: selection?.addOns || {},
+      };
+    }
+
+    const merchant = getMerchantConfig(bookingDoc.merchantSlug);
+
+    const formForPricing = {
+      customer: bookingDoc.customer || {},
+      event: bookingDoc.event || {},
+      selection: bookingDoc.selection || {},
+      shared: bookingDoc.shared || {},
+      food: bookingDoc.food || {},
+      merchantSpecific: bookingDoc.merchantSpecific || {},
+      notes: bookingDoc.notes || "",
+      addOns: bookingDoc.selection?.addOns || {},
+    };
+
+    const recalculatedPricing = calculatePricing(formForPricing, merchant);
+
+    bookingDoc.pricingSnapshot = {
+      ...(bookingDoc.pricingSnapshot || {}),
+      ...recalculatedPricing,
+      totalPrice: Number(
+        recalculatedPricing.total || recalculatedPricing.totalPrice || 0,
+      ),
+      total: Number(
+        recalculatedPricing.total || recalculatedPricing.totalPrice || 0,
+      ),
+    };
+
+    bookingDoc.updatedAt = new Date().toISOString();
+
+    await bookingDoc.save();
+
+    let calendarResult = null;
+
+    try {
+      calendarResult = await upsertBookingCalendarEvent(
+        bookingDoc.toObject(),
+        "updated",
+      );
+
+      if (calendarResult?.success && calendarResult?.eventId) {
+        bookingDoc.googleCalendarEventId = calendarResult.eventId;
+        bookingDoc.googleCalendarHtmlLink = calendarResult.htmlLink || "";
+
+        bookingDoc.calendarSync = {
+          status: "synced",
+          provider: calendarResult.provider || "google_calendar",
+          eventId: calendarResult.eventId,
+          htmlLink: calendarResult.htmlLink || "",
+          lastSyncedAt: new Date().toISOString(),
+          lastSyncedBy: user.email,
+          mode: "save_all",
+          result: calendarResult,
+        };
+
+        await bookingDoc.save();
+      }
+    } catch (calendarError) {
+      console.error("SAVE ALL CALENDAR SYNC ERROR:", calendarError);
+
+      bookingDoc.calendarSync = {
+        ...(bookingDoc.calendarSync || {}),
+        status: "failed",
+        lastSyncedAt: new Date().toISOString(),
+        lastSyncedBy: user.email,
+        mode: "save_all",
+        error: calendarError.message,
+      };
+
+      await bookingDoc.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: calendarResult?.success
+        ? "All updates saved and calendar synced. No email was sent."
+        : "All updates saved. Calendar sync did not complete. No email was sent.",
+      calendarResult,
+      booking: {
+        ...bookingDoc.toObject(),
+        merchantConfig: merchant,
+      },
+    });
+  } catch (error) {
+    console.error("SAVE ALL ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: "Failed to save all updates",
+      details: error.message,
+    });
+  }
+});
 router.post("/:bookingId/resend", requireAdminUser, async (req, res) => {
   try {
     const user = req.adminUser;
@@ -634,12 +771,15 @@ router.post("/:bookingId/resend", requireAdminUser, async (req, res) => {
 
     const booking = bookingDoc.toObject();
 
-if (!isPlatformAdmin(user) && !canAccessMerchant(user, booking.merchantSlug)) {
-  return res.status(403).json({
-    success: false,
-    error: "Forbidden",
-  });
-}
+    if (
+      !isPlatformAdmin(user) &&
+      !canAccessMerchant(user, booking.merchantSlug)
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: "Forbidden",
+      });
+    }
 
     await sendBookingEmails({
       booking,
@@ -680,7 +820,7 @@ router.patch("/:bookingId/archive", requireAdminUser, async (req, res) => {
         archivedBy: user.email,
         updatedAt: new Date().toISOString(),
       },
-      { new: true }
+      { new: true },
     );
 
     if (!booking) {
@@ -689,8 +829,6 @@ router.patch("/:bookingId/archive", requireAdminUser, async (req, res) => {
         error: "Booking not found",
       });
     }
-
-
 
     return res.json({
       success: true,
