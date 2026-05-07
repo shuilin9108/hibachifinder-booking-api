@@ -35,8 +35,7 @@ const a1hibachipartyConfig = {
   },
 
   payments: {
-    stripeDepositLink:
-      "https://buy.stripe.com/8x2eVd00q61PgiUg1WfjG01",
+    stripeDepositLink: "https://buy.stripe.com/8x2eVd00q61PgiUg1WfjG01",
   },
 
   integrations: {
@@ -53,17 +52,16 @@ const a1hibachipartyConfig = {
       webhookUrl: process.env.A1HIBACHIPARTY_GOOGLE_SHEET_WEBHOOK_URL || "",
     },
 
-googleCalendar: {
-  enabled: true,
-  calendarId:
-    "c_b5a5d74b77f681b0831c3091e61b5fb009f8941e4ad3addcdc08f915f5ab90d0@group.calendar.google.com",
-  webhookUrl: "",
-},
+    googleCalendar: {
+      enabled: true,
+      calendarId:
+        "c_b5a5d74b77f681b0831c3091e61b5fb009f8941e4ad3addcdc08f915f5ab90d0@group.calendar.google.com",
+      webhookUrl: "",
+    },
 
     stripe: {
       enabled: true,
-      depositPaymentLink:
-        "https://buy.stripe.com/8x2eVd00q61PgiUg1WfjG01",
+      depositPaymentLink: "https://buy.stripe.com/8x2eVd00q61PgiUg1WfjG01",
     },
   },
 
@@ -180,25 +178,47 @@ googleCalendar: {
 
   addOns: [
     {
-      id: "extra-regular-protein",
-      label: "Extra Regular Protein",
+      id: "extra-chicken",
+      label: "Extra Chicken",
       unitPrice: 10,
       unitLabel: "each",
-      choices: [
-        "Chicken",
-        "Steak",
-        "Shrimp",
-        "Scallops",
-        "Salmon",
-        "Tofu",
-      ],
     },
     {
-      id: "extra-premium-protein",
-      label: "Extra Premium Protein",
+      id: "extra-steak",
+      label: "Extra Steak",
+      unitPrice: 10,
+      unitLabel: "each",
+    },
+    {
+      id: "extra-shrimp",
+      label: "Extra Shrimp",
+      unitPrice: 10,
+      unitLabel: "each",
+    },
+    {
+      id: "extra-scallops",
+      label: "Extra Scallops",
+      unitPrice: 10,
+      unitLabel: "each",
+    },
+    {
+      id: "extra-salmon",
+      label: "Extra Salmon",
+      unitPrice: 10,
+      unitLabel: "each",
+    },
+    { id: "extra-tofu", label: "Extra Tofu", unitPrice: 10, unitLabel: "each" },
+    {
+      id: "extra-filet-mignon",
+      label: "Extra Filet Mignon",
       unitPrice: 15,
       unitLabel: "each",
-      choices: ["Filet Mignon", "Lobster Tail"],
+    },
+    {
+      id: "extra-lobster-tail",
+      label: "Extra Lobster Tail",
+      unitPrice: 15,
+      unitLabel: "each",
     },
     {
       id: "fried-rice",
@@ -247,8 +267,7 @@ googleCalendar: {
       label: "Optional $50 Deposit",
       incentive:
         "Pay $50 now to secure your spot faster and get priority scheduling.",
-      stripePaymentLink:
-        "https://buy.stripe.com/8x2eVd00q61PgiUg1WfjG01",
+      stripePaymentLink: "https://buy.stripe.com/8x2eVd00q61PgiUg1WfjG01",
     },
     tipOptions: [20, 25, 30],
     notes:
@@ -363,8 +382,7 @@ googleCalendar: {
     notesEnabled: true,
     emailOptional: true,
     minimumOrderTotal: 500,
-    minimumOrderMessage:
-      "Minimum booking subtotal is $500 before submitting.",
+    minimumOrderMessage: "Minimum booking subtotal is $500 before submitting.",
   },
 
   content: {

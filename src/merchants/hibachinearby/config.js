@@ -36,8 +36,7 @@ const hibachiNearbyConfig = {
   },
 
   payments: {
-    stripeDepositLink:
-      "https://buy.stripe.com/aFabJ32Dj3QE27k8Qe3wQ02",
+    stripeDepositLink: "https://buy.stripe.com/aFabJ32Dj3QE27k8Qe3wQ02",
   },
 
   integrations: {
@@ -51,20 +50,18 @@ const hibachiNearbyConfig = {
       enabled: true,
       spreadsheetId: "",
       sheetName: "HibachiNearby Bookings",
-      webhookUrl:
-        process.env.HIBACHINEARBY_GOOGLE_SHEET_WEBHOOK_URL || "",
+      webhookUrl: process.env.HIBACHINEARBY_GOOGLE_SHEET_WEBHOOK_URL || "",
     },
 
-googleCalendar: {
-  enabled: true,
-  calendarId:
-    "c_1f6fbd89d1b055dd325e253a4eabf1584f7c66543e1ac3cde025e9db0d0a39fe@group.calendar.google.com",
-  webhookUrl: "",
-},
+    googleCalendar: {
+      enabled: true,
+      calendarId:
+        "c_1f6fbd89d1b055dd325e253a4eabf1584f7c66543e1ac3cde025e9db0d0a39fe@group.calendar.google.com",
+      webhookUrl: "",
+    },
     stripe: {
       enabled: true,
-      depositPaymentLink:
-        "https://buy.stripe.com/aFabJ32Dj3QE27k8Qe3wQ02",
+      depositPaymentLink: "https://buy.stripe.com/aFabJ32Dj3QE27k8Qe3wQ02",
     },
   },
 
@@ -192,27 +189,53 @@ googleCalendar: {
 
   addOns: [
     {
-      id: "extra-regular-protein",
-      label: "Extra Regular Protein",
+      id: "extra-chicken",
+      label: "Extra Chicken",
       unitPrice: 10,
       unitLabel: "each",
-      choices: [
-        "Chicken",
-        "Steak",
-        "Shrimp",
-        "Scallops",
-        "Salmon",
-        "Tofu",
-        "Squid",
-      ],
     },
-
     {
-      id: "extra-premium-protein",
-      label: "Extra Premium Protein",
+      id: "extra-steak",
+      label: "Extra Steak",
+      unitPrice: 10,
+      unitLabel: "each",
+    },
+    {
+      id: "extra-shrimp",
+      label: "Extra Shrimp",
+      unitPrice: 10,
+      unitLabel: "each",
+    },
+    {
+      id: "extra-scallops",
+      label: "Extra Scallops",
+      unitPrice: 10,
+      unitLabel: "each",
+    },
+    {
+      id: "extra-salmon",
+      label: "Extra Salmon",
+      unitPrice: 10,
+      unitLabel: "each",
+    },
+    { id: "extra-tofu", label: "Extra Tofu", unitPrice: 10, unitLabel: "each" },
+    {
+      id: "extra-squid",
+      label: "Extra Squid",
+      unitPrice: 10,
+      unitLabel: "each",
+    },
+    {
+      id: "extra-filet-mignon",
+      label: "Extra Filet Mignon",
       unitPrice: 15,
       unitLabel: "each",
-      choices: ["Filet Mignon", "Lobster Tail"],
+    },
+    {
+      id: "extra-lobster-tail",
+      label: "Extra Lobster Tail",
+      unitPrice: 15,
+      unitLabel: "each",
     },
 
     {
@@ -269,8 +292,7 @@ googleCalendar: {
       label: "Optional $50 Deposit",
       incentive:
         "Pay $50 now to secure your spot faster and get priority scheduling.",
-      stripePaymentLink:
-        "https://buy.stripe.com/aFabJ32Dj3QE27k8Qe3wQ02",
+      stripePaymentLink: "https://buy.stripe.com/aFabJ32Dj3QE27k8Qe3wQ02",
     },
 
     tipOptions: [20, 25, 30],
@@ -289,8 +311,7 @@ googleCalendar: {
       vaFallbackRate: 0.06,
     },
 
-    notes:
-      "Tax handling should be based on destination/address jurisdiction.",
+    notes: "Tax handling should be based on destination/address jurisdiction.",
   },
 
   promotions: {
