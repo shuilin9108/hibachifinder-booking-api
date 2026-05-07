@@ -62,7 +62,7 @@ function getBirthdayThisYearDate(eventDateObj, birthdayParsed) {
     birthdayParsed.day,
     12,
     0,
-    0
+    0,
   );
 }
 
@@ -72,7 +72,10 @@ function getDayDifference(a, b) {
 }
 
 function isBirthdayWithinWindow(eventDateObj, birthdayParsed, windowDays) {
-  const sameYearBirthday = getBirthdayThisYearDate(eventDateObj, birthdayParsed);
+  const sameYearBirthday = getBirthdayThisYearDate(
+    eventDateObj,
+    birthdayParsed,
+  );
 
   const prevYearBirthday = new Date(
     eventDateObj.getFullYear() - 1,
@@ -80,7 +83,7 @@ function isBirthdayWithinWindow(eventDateObj, birthdayParsed, windowDays) {
     birthdayParsed.day,
     12,
     0,
-    0
+    0,
   );
 
   const nextYearBirthday = new Date(
@@ -89,7 +92,7 @@ function isBirthdayWithinWindow(eventDateObj, birthdayParsed, windowDays) {
     birthdayParsed.day,
     12,
     0,
-    0
+    0,
   );
 
   const diffs = [
@@ -130,7 +133,7 @@ function getPromoCodeDiscount(form, merchant) {
 
   const normalizedInput = normalizePromoCode(
     form?.shared?.promoCode,
-    promoField.normalize
+    promoField.normalize,
   );
 
   if (!normalizedInput) {
@@ -151,7 +154,9 @@ function getPromoCodeDiscount(form, merchant) {
       );
     }
 
-    return normalizePromoCode(item.code, promoField.normalize) === normalizedInput;
+    return (
+      normalizePromoCode(item.code, promoField.normalize) === normalizedInput
+    );
   });
 
   if (!matchedCode) {
@@ -177,7 +182,12 @@ function getPromoCodeDiscount(form, merchant) {
   };
 }
 
-function getBirthdayDiscount(form, merchant, selectedPackage, subtotalBeforeDiscount) {
+function getBirthdayDiscount(
+  form,
+  merchant,
+  selectedPackage,
+  subtotalBeforeDiscount,
+) {
   const birthdayPromo = merchant?.promotions?.birthdayPromo;
 
   if (!birthdayPromo?.enabled) {
@@ -218,7 +228,7 @@ function getBirthdayDiscount(form, merchant, selectedPackage, subtotalBeforeDisc
   const withinWindow = isBirthdayWithinWindow(
     eventDateObj,
     birthdayParsed,
-    birthdayPromo.birthdayWindowDays
+    birthdayPromo.birthdayWindowDays,
   );
 
   if (!withinWindow) {
@@ -256,7 +266,8 @@ function calculateTravelFee(form, merchant) {
 
   if (model === "custom_quote" || model === "manual_only") {
     return {
-      travelMiles: Number.isNaN(travelMiles) || travelMiles < 0 ? 0 : travelMiles,
+      travelMiles:
+        Number.isNaN(travelMiles) || travelMiles < 0 ? 0 : travelMiles,
       travelFee: 0,
       extraMiles: 0,
       travelFeeStatus: "manual_review_required",
@@ -281,10 +292,12 @@ function calculateTravelFee(form, merchant) {
 
   const freeMiles = Number(travelFeeConfig.freeMiles || 0);
   const pricePerMileOverFreeLimit = Number(
-    travelFeeConfig.pricePerMileOverFreeLimit || 0
+    travelFeeConfig.pricePerMileOverFreeLimit || 0,
   );
   const minimumFee = Number(travelFeeConfig.minimumFee || 0);
-  const baseFeeOverFreeLimit = Number(travelFeeConfig.baseFeeOverFreeLimit || 0);
+  const baseFeeOverFreeLimit = Number(
+    travelFeeConfig.baseFeeOverFreeLimit || 0,
+  );
 
   const extraMiles = Math.max(0, travelMiles - freeMiles);
 
@@ -321,10 +334,10 @@ function getTaxRate(merchant) {
 
   return Number(
     fallbackRates.nycCombinedRate ||
-    fallbackRates.ncFallbackRate ||
-    fallbackRates.scFallbackRate ||
-    fallbackRates.vaFallbackRate ||
-    0
+      fallbackRates.ncFallbackRate ||
+      fallbackRates.scFallbackRate ||
+      fallbackRates.vaFallbackRate ||
+      0,
   );
 }
 
@@ -403,9 +416,7 @@ function calculatePricing(form, merchant) {
   const kidCount = Number(form.event?.kidCount || 0);
 
   const minGuests =
-    selectedPackage?.rules?.minGuests ||
-    merchant?.booking?.minimumGuests ||
-    10;
+    selectedPackage?.rules?.minGuests || merchant?.booking?.minimumGuests || 10;
 
   const totalGuests = adultCount + kidCount;
   const effectiveGuestCount = Math.max(totalGuests, minGuests);
@@ -432,6 +443,59 @@ function calculatePricing(form, merchant) {
   const adultProteins = form.selection?.proteins?.adult || {};
   const kidProteins = form.selection?.proteins?.kid || {};
 
+  const includedAdultSlots =
+    adultCount * (String(selectedPackage?.name || "").includes("3") ? 3 : 2);
+
+  const includedKidSlots = kidCount;
+
+  const totalAdultSelections = Object.values(adultProteins).reduce(
+    (total, value) => total + Number(value || 0),
+    0,
+  );
+
+  const totalKidSelections = Object.values(kidProteins).reduce(
+    (total, value) => total + Number(value || 0),
+    0,
+  );
+
+  const extraAdultSelections = Math.max(
+    0,
+    totalAdultSelections - includedAdultSlots,
+  );
+
+  const extraKidSelections = Math.max(0, totalKidSelections - includedKidSlots);
+
+  const totalExtraSelections = extraAdultSelections + extraKidSelections;
+
+  const premiumProteinIds = ["filet-mignon", "lobster-tail"];
+
+  let premiumExtraSelections = 0;
+
+  for (const [proteinId, quantity] of Object.entries(adultProteins)) {
+    if (premiumProteinIds.includes(proteinId)) {
+      premiumExtraSelections += Number(quantity || 0);
+    }
+  }
+
+  for (const [proteinId, quantity] of Object.entries(kidProteins)) {
+    if (premiumProteinIds.includes(proteinId)) {
+      premiumExtraSelections += Number(quantity || 0);
+    }
+  }
+
+  premiumExtraSelections = Math.min(
+    premiumExtraSelections,
+    totalExtraSelections,
+  );
+
+  const regularExtraSelections = totalExtraSelections - premiumExtraSelections;
+
+  const extraRegularProteinTotal = regularExtraSelections * 10;
+  const extraPremiumProteinTotal = premiumExtraSelections * 15;
+
+  addOnTotal += extraRegularProteinTotal;
+  addOnTotal += extraPremiumProteinTotal;
+
   let proteinUpgradeTotal = 0;
 
   for (const [proteinId, quantity] of Object.entries(adultProteins)) {
@@ -456,7 +520,7 @@ function calculatePricing(form, merchant) {
     form,
     merchant,
     selectedPackage,
-    subtotalBeforeDiscount
+    subtotalBeforeDiscount,
   );
 
   const allowStacking = !!merchant?.promotions?.allowStacking;
@@ -513,6 +577,11 @@ function calculatePricing(form, merchant) {
 
     addOnTotal,
     proteinUpgradeTotal,
+    extraRegularProteinTotal,
+    extraPremiumProteinTotal,
+    regularExtraSelections,
+    premiumExtraSelections,
+    totalExtraSelections,
 
     effectiveGuestCount,
 
