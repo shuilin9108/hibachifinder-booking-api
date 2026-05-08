@@ -48,7 +48,7 @@ const kobeConfig = {
 
     googleSheets: {
       enabled: true,
-      spreadsheetId: "",
+      spreadsheetId: "1MydHE6XhZZ5z6irda54fTkPxLCQs7Yg_QN9QVzhNTwk",
       sheetName: "Kobe Hibachi Bookings",
       webhookUrl: process.env.KOBE_GOOGLE_SHEET_WEBHOOK_URL || "",
     },

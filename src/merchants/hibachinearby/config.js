@@ -48,7 +48,7 @@ const hibachiNearbyConfig = {
 
     googleSheets: {
       enabled: true,
-      spreadsheetId: "",
+      spreadsheetId: "11BxhSfPYJ9genpsAxBvpiaLgTXGKvgpnYD-B_bSzEhk",
       sheetName: "HibachiNearby Bookings",
       webhookUrl: process.env.HIBACHINEARBY_GOOGLE_SHEET_WEBHOOK_URL || "",
     },

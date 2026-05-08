@@ -47,7 +47,7 @@ const a1hibachipartyConfig = {
 
     googleSheets: {
       enabled: true,
-      spreadsheetId: "",
+      spreadsheetId: "1C3U3UDFgSgHqZY99xZuZ7b15lQbYwSkyOeI6PSxplc4",
       sheetName: "A1 Hibachi Party Bookings",
       webhookUrl: process.env.A1HIBACHIPARTY_GOOGLE_SHEET_WEBHOOK_URL || "",
     },
