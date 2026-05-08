@@ -6,6 +6,8 @@ const { upsertBookingCalendarEvent } = require("../services/bookingCalendarServi
 const { calculatePricing } = require("../core/pricing/pricingEngine");
 const getMerchantConfig = require("../core/merchants/getMerchantConfig");
 const Booking = require("../models/Booking");
+const { appendBookingRow } = require("../integrations/sheets/appendBookingRow");
+const { bookingSheetMapper } = require("../core/bookings/bookingSheetMapper");
 console.log("🔥 NEW BOOKING ROUTE LOADED");
 
 const router = express.Router();
@@ -501,6 +503,26 @@ try {
     bookingRecord.calendarSync = createdBooking.calendarSync;
     bookingStore.set(bookingId, bookingRecord);
   }
+  const spreadsheetId =
+  merchant?.integrations?.googleSheets?.spreadsheetId ||
+  merchant?.googleSheets?.spreadsheetId ||
+  merchant?.sheetId;
+
+if (spreadsheetId) {
+  const rowData = bookingSheetMapper({
+    booking: bookingRecord,
+    merchant,
+    pricing: bookingRecord.pricingSnapshot || {},
+  });
+
+  await appendBookingRow({
+    spreadsheetId,
+    sheetName: "Bookings",
+    rowData,
+  });
+} else {
+  console.warn(`⚠️ No Google Sheet spreadsheetId found for merchant: ${merchantSlug}`);
+}
 } catch (error) {
   console.error("INITIAL BOOKING SIDE EFFECT ERROR:", error);
 }
