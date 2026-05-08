@@ -8,7 +8,7 @@ const healthRouter = require("./routes/health");
 const merchantsRouter = require("./routes/merchants");
 const bookingsRouter = require("./routes/bookings");
 const webhookRoutes = require("./routes/webhook");
-
+const paymentsRouter = require("./routes/payments");
 const app = express();
 
 let isConnected = false;
@@ -71,6 +71,7 @@ app.use("/api/webhook", webhookRoutes);
 app.use("/api/health", healthRouter);
 app.use("/api/merchants", merchantsRouter);
 app.use("/api/bookings", bookingsRouter);
+app.use("/api/payments", paymentsRouter);
 app.use("/api/auth", authRoutes);
 
 const adminBookingsRouter = require("./routes/adminBookings");
