@@ -898,15 +898,15 @@ function generateInvoiceBuffer(booking) {
 
     const addOnY = row3Y + 92;
     drawDivider(doc, leftX + 12, addOnY, fullW - 24);
+
     doc
-  .font("Helvetica-Bold")
-  .fontSize(8.1)
-  .fillColor("#111111")
-  .text(addOnsDetails, {
-    width: fullW - 106,
-    lineBreak: false,
-    continued: false,
-  });
+      .font("Helvetica-Bold")
+      .fontSize(6.8)
+      .fillColor("#111111")
+      .text(`Add-Ons Details: ${addOnsDetails}`, leftX + 12, addOnY + 8, {
+        width: fullW - 24,
+        lineBreak: false,
+      });
 
     doc
       .font("Helvetica-Bold")
