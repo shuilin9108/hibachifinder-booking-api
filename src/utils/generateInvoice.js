@@ -229,7 +229,11 @@ function generateInvoiceBuffer(booking) {
     const kidCount = Number(event?.kidCount || pricing?.kidCount || 0);
     const guestCount = Number(event?.guestCount || adultCount + kidCount);
 
-    const addOnsDetails = pricing?.addOnsDetails || "None";
+    const addOnsDetails =
+      Object.entries(selection?.addOns || {})
+        .filter(([_, qty]) => Number(qty) > 0)
+        .map(([name, qty]) => `${name} x${qty}`)
+        .join(", ") || "None";
 
     const adultProteins =
       selection?.mealDecision === "now"
@@ -832,9 +836,9 @@ function generateInvoiceBuffer(booking) {
       });
 
     // Selections full width
-const row3Y = row2Y + priceCardH + 10;
-const fullW = contentWidth;
-const selectionsH = 105;
+    const row3Y = row2Y + priceCardH + 10;
+    const fullW = contentWidth;
+    const selectionsH = 105;
 
     drawRoundedBox(doc, leftX, row3Y, fullW, selectionsH);
 
@@ -894,24 +898,28 @@ const selectionsH = 105;
 
     const addOnY = row3Y + 82;
     drawDivider(doc, leftX + 12, addOnY, fullW - 24);
-    drawParagraphBlock(
-      doc,
-      "Add-Ons Details",
-      addOnsDetails,
-      leftX + 12,
-      addOnY + 8,
-      fullW - 24,
-      {
-        titleSize: 8.3,
-        valueSize: 8.1,
-        gapAfterBlock: 0,
-      },
-    );
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(8.3)
+      .fillColor("#6b7280")
+      .text(`Add-Ons Details: `, leftX + 12, addOnY + 8, {
+        width: 82,
+        continued: true,
+      });
+
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(8.1)
+      .fillColor("#111111")
+      .text(addOnsDetails, {
+        width: fullW - 106,
+        continued: false,
+      });
 
     // Additional Information + Notes
-const row4Y = row3Y + selectionsH + 10;
-const leftBottomH = 118;
-const rightBottomH = 118;
+    const row4Y = row3Y + selectionsH + 10;
+    const leftBottomH = 118;
+    const rightBottomH = 118;
 
     drawRoundedBox(doc, leftX, row4Y, colWidth, leftBottomH);
     drawRoundedBox(doc, rightX, row4Y, colWidth, rightBottomH);
