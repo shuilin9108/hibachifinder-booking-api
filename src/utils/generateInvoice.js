@@ -838,7 +838,7 @@ function generateInvoiceBuffer(booking) {
     // Selections full width
     const row3Y = row2Y + priceCardH + 10;
     const fullW = contentWidth;
-    const selectionsH = 105;
+    const selectionsH = 128;
 
     drawRoundedBox(doc, leftX, row3Y, fullW, selectionsH);
 
@@ -896,7 +896,7 @@ function generateInvoiceBuffer(booking) {
       },
     );
 
-    const addOnY = row3Y + 82;
+    const addOnY = row3Y + 92;
     drawDivider(doc, leftX + 12, addOnY, fullW - 24);
     doc
       .font("Helvetica-Bold")
