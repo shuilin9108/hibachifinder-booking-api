@@ -912,15 +912,6 @@ function generateInvoiceBuffer(booking) {
         lineGap: 0,
       });
 
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(8.1)
-      .fillColor("#111111")
-      .text(addOnsDetails, {
-        width: fullW - 106,
-        continued: false,
-      });
-
     // Additional Information + Notes
     const row4Y = row3Y + selectionsH + 10;
     const leftBottomH = 118;
