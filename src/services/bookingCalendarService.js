@@ -183,7 +183,7 @@ function buildBookingCalendarPayload(booking, mode = "initial") {
     `Subtotal Before Discount: ${money(pricing?.subtotalBeforeDiscount || 0)}`,
     `Tax: ${money(pricing?.tax || 0)}`,
     `Total Price: ${money(pricing?.totalPrice || pricing?.total || 0)}`,
-    `Deposit Amount: ${money(pricing?.deposit || 0)}`,
+    `Deposit Amount: ${money(pricing?.depositAmount || pricing?.depositDue || pricing?.deposit || 0)}`,
     `Deposit Status: ${payment?.depositStatus || "not_paid"}`,
     `Assigned Chef: ${assignedChefEmail}`,
     "",
