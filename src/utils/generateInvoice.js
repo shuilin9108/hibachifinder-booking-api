@@ -229,11 +229,17 @@ function generateInvoiceBuffer(booking) {
     const kidCount = Number(event?.kidCount || pricing?.kidCount || 0);
     const guestCount = Number(event?.guestCount || adultCount + kidCount);
 
-    const addOnsDetails =
-      Object.entries(selection?.addOns || {})
-        .filter(([_, qty]) => Number(qty) > 0)
-        .map(([name, qty]) => `${name} x${qty}`)
-        .join(", ") || "None";
+const addOnsDetails =
+  Object.entries(selection?.addOns || {})
+    .filter(([_, qty]) => Number(qty) > 0)
+    .map(([name, qty]) => {
+      const cleanedName = name
+        .replace(/^extra-/, "")
+        .replace(/-/g, " ");
+
+      return `${cleanedName} x${qty}`;
+    })
+    .join(", ") || "None";
 
     const adultProteins =
       selection?.mealDecision === "now"
@@ -901,7 +907,7 @@ function generateInvoiceBuffer(booking) {
 
     doc
       .font("Helvetica-Bold")
-      .fontSize(6.8)
+      .fontSize(6.2)
       .fillColor("#111111")
       .text(`Add-Ons Details: ${addOnsDetails}`, leftX + 12, addOnY + 8, {
         width: fullW - 24,
