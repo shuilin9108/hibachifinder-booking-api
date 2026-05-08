@@ -46,12 +46,12 @@ const hibachiNearbyConfig = {
       merchantNotificationEmail: "hibachinearby@gmail.com",
     },
 
-    googleSheets: {
-      enabled: true,
-      spreadsheetId: "11BxhSfPYJ9genpsAxBvpiaLgTXGKvgpnYD-B_bSzEhk",
-      sheetName: "HibachiNearby Bookings",
-      webhookUrl: process.env.HIBACHINEARBY_GOOGLE_SHEET_WEBHOOK_URL || "",
-    },
+googleSheets: {
+  enabled: true,
+  spreadsheetId: "1C3U3UDFgSgHqZY99xZuZ7b15lQbYwSkyOeI6PSxplc4",
+  sheetName: "Bookings",
+  webhookUrl: process.env.HIBACHINEARBY_GOOGLE_SHEET_WEBHOOK_URL || "",
+},
 
     googleCalendar: {
       enabled: true,

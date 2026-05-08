@@ -46,12 +46,12 @@ const kobeConfig = {
       merchantNotificationEmail: "kobehibachicatering@gmail.com",
     },
 
-    googleSheets: {
-      enabled: true,
-      spreadsheetId: "1MydHE6XhZZ5z6irda54fTkPxLCQs7Yg_QN9QVzhNTwk",
-      sheetName: "Kobe Hibachi Bookings",
-      webhookUrl: process.env.KOBE_GOOGLE_SHEET_WEBHOOK_URL || "",
-    },
+googleSheets: {
+  enabled: true,
+  spreadsheetId: "11BxhSfPYJ9genpsAxBvpiaLgTXGKvgpnYD-B_bSzEhk",
+  sheetName: "Bookings",
+  webhookUrl: process.env.KOBE_GOOGLE_SHEET_WEBHOOK_URL || "",
+},
 
     googleCalendar: {
       enabled: true,

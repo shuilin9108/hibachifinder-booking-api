@@ -45,12 +45,12 @@ const a1hibachipartyConfig = {
       merchantNotificationEmail: "a1hibachiparty@gmail.com",
     },
 
-    googleSheets: {
-      enabled: true,
-      spreadsheetId: "1C3U3UDFgSgHqZY99xZuZ7b15lQbYwSkyOeI6PSxplc4",
-      sheetName: "A1 Hibachi Party Bookings",
-      webhookUrl: process.env.A1HIBACHIPARTY_GOOGLE_SHEET_WEBHOOK_URL || "",
-    },
+googleSheets: {
+  enabled: true,
+  spreadsheetId: "1MydHE6XhZZ5z6irda54fTkPxLCQs7Yg_QN9QVzhNTwk",
+  sheetName: "Bookings",
+  webhookUrl: process.env.A1HIBACHIPARTY_GOOGLE_SHEET_WEBHOOK_URL || "",
+},
 
     googleCalendar: {
       enabled: true,
