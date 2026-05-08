@@ -484,8 +484,8 @@ function generateInvoiceBuffer(booking) {
 
     // Pricing + Deposit row
     const row2Y = topY + cardH + 14;
-    const priceCardH = 320;
-    const depositCardH = 320;
+    const priceCardH = 250;
+    const depositCardH = 250;
 
     drawRoundedBox(doc, leftX, row2Y, colWidth, priceCardH);
     drawRoundedBox(doc, rightX, row2Y, colWidth, depositCardH);
@@ -832,9 +832,9 @@ function generateInvoiceBuffer(booking) {
       });
 
     // Selections full width
-    const row3Y = row2Y + priceCardH + 14;
-    const fullW = contentWidth;
-    const selectionsH = 118;
+const row3Y = row2Y + priceCardH + 10;
+const fullW = contentWidth;
+const selectionsH = 105;
 
     drawRoundedBox(doc, leftX, row3Y, fullW, selectionsH);
 
@@ -909,9 +909,9 @@ function generateInvoiceBuffer(booking) {
     );
 
     // Additional Information + Notes
-    const row4Y = row3Y + selectionsH + 14;
-    const leftBottomH = 120;
-    const rightBottomH = 120;
+const row4Y = row3Y + selectionsH + 10;
+const leftBottomH = 82;
+const rightBottomH = 82;
 
     drawRoundedBox(doc, leftX, row4Y, colWidth, leftBottomH);
     drawRoundedBox(doc, rightX, row4Y, colWidth, rightBottomH);
