@@ -80,9 +80,13 @@ async function sendBookingEmails({ booking, mode = "initial" }) {
   const depositPaymentLink = getDepositPaymentLink(merchant);
 
   const totalPrice = Number(pricing?.totalPrice || pricing?.total || 0);
-  const depositAmount = Number(
-    pricing?.deposit || merchant?.payment?.optionalDeposit?.value || 50
-  );
+const depositAmount = Number(
+  pricing?.depositAmount ||
+  pricing?.depositDue ||
+  pricing?.deposit ||
+  merchant?.payment?.optionalDeposit?.value ||
+  50
+);
 
   const depositPaid =
     String(payment?.depositStatus || "").toLowerCase() === "paid";
@@ -161,7 +165,9 @@ async function sendBookingEmails({ booking, mode = "initial" }) {
 
     <p><strong>Date:</strong> ${event?.date || ""}</p>
     <p><strong>Time:</strong> ${event?.time || ""}</p>
-    <p><strong>Guests:</strong> ${event?.guestCount || 0}</p>
+<p><strong>Guests:</strong> ${
+  Number(event?.adultCount || 0) + Number(event?.kidCount || 0)
+}</p>
 
     <p><strong>Package:</strong> ${pricing?.packageName || ""}</p>
     <p><strong>Travel Fee:</strong> ${travelFeeText}</p>
