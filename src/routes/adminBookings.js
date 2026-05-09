@@ -10,6 +10,7 @@ const { sendBookingEmails } = require("../services/bookingEmailService");
 const Booking = require("../models/Booking");
 const {
   upsertBookingCalendarEvent,
+  deleteBookingCalendarEvent,
 } = require("../services/bookingCalendarService");
 const {
   saveBookingPipeline,
@@ -783,16 +784,7 @@ router.patch("/:bookingId/archive", requireAdminUser, async (req, res) => {
       });
     }
 
-    const booking = await Booking.findOneAndUpdate(
-      { bookingId },
-      {
-        archived: true,
-        archivedAt: new Date(),
-        archivedBy: user.email,
-        updatedAt: new Date().toISOString(),
-      },
-      { new: true },
-    );
+    const booking = await Booking.findOne({ bookingId });
 
     if (!booking) {
       return res.status(404).json({
@@ -801,14 +793,47 @@ router.patch("/:bookingId/archive", requireAdminUser, async (req, res) => {
       });
     }
 
+    let calendarDeleteResult = null;
+
+    try {
+      calendarDeleteResult = await deleteBookingCalendarEvent(
+        booking.toObject(),
+      );
+    } catch (calendarError) {
+      console.error("ARCHIVE CALENDAR DELETE ERROR:", calendarError);
+      calendarDeleteResult = {
+        success: false,
+        error: calendarError.message,
+      };
+    }
+
+    booking.archived = true;
+    booking.archivedAt = new Date();
+    booking.archivedBy = user.email;
+    booking.updatedAt = new Date().toISOString();
+    booking.calendarSync = {
+      ...(booking.calendarSync || {}),
+      status: calendarDeleteResult?.success ? "deleted" : "delete_failed",
+      deletedAt: calendarDeleteResult?.success
+        ? new Date().toISOString()
+        : booking.calendarSync?.deletedAt,
+      deleteResult: calendarDeleteResult,
+    };
+
+    await booking.save();
+
     return res.json({
       success: true,
       booking,
+      calendarDeleteResult,
     });
   } catch (err) {
+    console.error("ARCHIVE ERROR:", err);
+
     return res.status(500).json({
       success: false,
       error: "Archive failed",
+      details: err.message,
     });
   }
 });
@@ -825,7 +850,7 @@ router.delete("/:bookingId", requireAdminUser, async (req, res) => {
       });
     }
 
-    const booking = await Booking.findOneAndDelete({ bookingId });
+    const booking = await Booking.findOne({ bookingId });
 
     if (!booking) {
       return res.status(404).json({
@@ -834,14 +859,34 @@ router.delete("/:bookingId", requireAdminUser, async (req, res) => {
       });
     }
 
+    let calendarDeleteResult = null;
+
+    try {
+      calendarDeleteResult = await deleteBookingCalendarEvent(
+        booking.toObject(),
+      );
+    } catch (calendarError) {
+      console.error("DELETE CALENDAR EVENT ERROR:", calendarError);
+      calendarDeleteResult = {
+        success: false,
+        error: calendarError.message,
+      };
+    }
+
+    await Booking.deleteOne({ bookingId });
+
     return res.json({
       success: true,
       message: "Booking deleted",
+      calendarDeleteResult,
     });
   } catch (err) {
+    console.error("DELETE ERROR:", err);
+
     return res.status(500).json({
       success: false,
       error: "Delete failed",
+      details: err.message,
     });
   }
 });

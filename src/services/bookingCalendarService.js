@@ -39,19 +39,22 @@ function getTravelFeeText(pricing) {
 
   return money(pricing?.travelFee || 0);
 }
-
 function parseEventDateTime(date, time) {
   if (!date) return null;
 
   const cleanTime = time || "12:00";
-  const start = new Date(`${date}T${cleanTime}:00`);
-  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+  const [hourRaw, minuteRaw] = cleanTime.split(":");
 
-  if (Number.isNaN(start.getTime())) return null;
+  const hour = Number(hourRaw);
+  const minute = Number(minuteRaw || 0);
+
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+
+  const endHour = hour + 2;
 
   return {
-    start: start.toISOString(),
-    end: end.toISOString(),
+    start: `${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`,
+    end: `${date}T${String(endHour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`,
   };
 }
 
@@ -344,6 +347,73 @@ const url = shouldSendUpdates
   };
 }
 
+async function deleteBookingCalendarEvent(booking) {
+  const merchant = getMerchantFromBooking(booking);
+  const calendarConfig = merchant?.integrations?.googleCalendar || {};
+
+  if (calendarConfig.enabled === false) {
+    return {
+      success: false,
+      skipped: true,
+      reason: "calendar_disabled",
+    };
+  }
+
+  const eventId = getExistingGoogleEventId(booking);
+
+  if (!eventId) {
+    return {
+      success: false,
+      skipped: true,
+      reason: "missing_calendar_event_id",
+    };
+  }
+
+  const accessToken = await getGoogleAccessToken();
+  const calendarId = encodeURIComponent(getCalendarId(merchant));
+
+  const url = `${GOOGLE_CALENDAR_API}/calendars/${calendarId}/events/${encodeURIComponent(
+    eventId,
+  )}`;
+
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (response.status === 404 || response.status === 410) {
+    return {
+      success: true,
+      alreadyDeleted: true,
+      eventId,
+      calendarId: getCalendarId(merchant),
+    };
+  }
+
+  if (!response.ok) {
+    let message = response.status;
+
+    try {
+      const data = await response.json();
+      message = data.error?.message || response.status;
+    } catch (_) {
+      // ignore json parse error
+    }
+
+    throw new Error(`Google Calendar delete failed: ${message}`);
+  }
+
+  return {
+    success: true,
+    provider: "google_calendar",
+    eventId,
+    calendarId: getCalendarId(merchant),
+  };
+}
+
 module.exports = {
   upsertBookingCalendarEvent,
+  deleteBookingCalendarEvent,
 };
