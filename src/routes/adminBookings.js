@@ -205,6 +205,32 @@ router.delete("/bulk/delete", requireAdminUser, async (req, res) => {
       });
     }
 
+    const bookings = await Booking.find({
+      bookingId: { $in: bookingIds },
+    });
+
+    const calendarDeleteResults = [];
+
+    for (const booking of bookings) {
+      try {
+        const result = await deleteBookingCalendarEvent(booking.toObject());
+
+        calendarDeleteResults.push({
+          bookingId: booking.bookingId,
+          success: true,
+          result,
+        });
+      } catch (calendarError) {
+        console.error("BULK DELETE CALENDAR EVENT ERROR:", calendarError);
+
+        calendarDeleteResults.push({
+          bookingId: booking.bookingId,
+          success: false,
+          error: calendarError.message,
+        });
+      }
+    }
+
     const result = await Booking.deleteMany({
       bookingId: { $in: bookingIds },
     });
@@ -213,12 +239,15 @@ router.delete("/bulk/delete", requireAdminUser, async (req, res) => {
       success: true,
       message: "Bookings deleted",
       count: result.deletedCount || 0,
+      calendarDeleteResults,
     });
   } catch (err) {
     console.error("BULK DELETE ERROR:", err);
+
     return res.status(500).json({
       success: false,
       error: "Bulk delete failed",
+      details: err.message,
     });
   }
 });

@@ -27,11 +27,32 @@ function moneyValue(value) {
   return Number(value) || 0;
 }
 
+function formatNewYorkDateTime(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  }).format(date);
+}
+
 function bookingSheetMapper({ booking = {}, merchant = {}, pricing = {} }) {
   return [
     booking.bookingId || booking._id || "",
 
-    booking.createdAt || new Date().toISOString(),
+    formatNewYorkDateTime(booking.createdAt || new Date()),
 
     merchant.slug || booking.merchantSlug || booking.merchant || "",
 
