@@ -478,6 +478,12 @@ try {
     mode: "initial",
   });
 
+  console.log("✅ Initial booking emails sent");
+} catch (emailError) {
+  console.error("INITIAL BOOKING EMAIL ERROR:", emailError);
+}
+
+try {
   const calendarResult = await upsertBookingCalendarEvent(
     bookingRecord,
     "initial",
@@ -502,29 +508,54 @@ try {
     bookingRecord.googleCalendarHtmlLink = calendarResult.htmlLink || "";
     bookingRecord.calendarSync = createdBooking.calendarSync;
     bookingStore.set(bookingId, bookingRecord);
+
+    console.log("✅ Booking synced to Google Calendar");
   }
-  const spreadsheetId =
-  merchant?.integrations?.googleSheets?.spreadsheetId ||
-  merchant?.googleSheets?.spreadsheetId ||
-  merchant?.sheetId;
+} catch (calendarError) {
+  console.error("INITIAL BOOKING CALENDAR ERROR:", calendarError);
 
-if (spreadsheetId) {
-  const rowData = bookingSheetMapper({
-    booking: bookingRecord,
-    merchant,
-    pricing: bookingRecord.pricingSnapshot || {},
-  });
+  createdBooking.calendarSync = {
+    ...(createdBooking.calendarSync || {}),
+    status: "failed",
+    provider: "google_calendar",
+    lastSyncedAt: new Date().toISOString(),
+    mode: "initial",
+    error: calendarError.message,
+  };
 
-  await appendBookingRow({
-    spreadsheetId,
-    sheetName: "Bookings",
-    rowData,
-  });
-} else {
-  console.warn(`⚠️ No Google Sheet spreadsheetId found for merchant: ${merchantSlug}`);
+  await createdBooking.save();
 }
-} catch (error) {
-  console.error("INITIAL BOOKING SIDE EFFECT ERROR:", error);
+
+try {
+  const spreadsheetId =
+    merchant?.integrations?.googleSheets?.spreadsheetId ||
+    merchant?.googleSheets?.spreadsheetId ||
+    merchant?.sheetId;
+
+  const sheetName =
+    merchant?.integrations?.googleSheets?.sheetName || "Bookings";
+
+  if (spreadsheetId) {
+    const rowData = bookingSheetMapper({
+      booking: bookingRecord,
+      merchant,
+      pricing: bookingRecord.pricingSnapshot || {},
+    });
+
+    await appendBookingRow({
+      spreadsheetId,
+      sheetName,
+      rowData,
+    });
+
+    console.log("✅ Booking row appended to Google Sheet");
+  } else {
+    console.warn(
+      `⚠️ No Google Sheet spreadsheetId found for merchant: ${merchantSlug}`,
+    );
+  }
+} catch (sheetError) {
+  console.error("INITIAL BOOKING SHEET ERROR:", sheetError);
 }
 
   return res.status(201).json({
