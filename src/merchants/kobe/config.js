@@ -406,10 +406,20 @@ googleSheets: {
     },
   },
 
-  theme: {
-    primaryColor: "#111827",
-    cardRadius: "18px",
-  },
+theme: {
+  primaryColor: "#dc2626",
+  secondaryColor: "#111111",
+  accentColor: "#f97316",
+
+  backgroundColor: "#fff7f5",
+  cardBackground: "#ffffff",
+
+  textColor: "#111111",
+  mutedTextColor: "#6b7280",
+
+  borderRadius: "22px",
+  cardRadius: "22px",
+},
 };
 
 module.exports = kobeConfig;

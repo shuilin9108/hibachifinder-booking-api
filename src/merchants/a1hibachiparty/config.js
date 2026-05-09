@@ -403,10 +403,20 @@ googleSheets: {
     },
   },
 
-  theme: {
-    primaryColor: "#dc2626",
-    cardRadius: "18px",
-  },
+theme: {
+  primaryColor: "#ef4444",
+  secondaryColor: "#050505",
+  accentColor: "#ff7a00",
+
+  backgroundColor: "#fff7f2",
+  cardBackground: "#ffffff",
+
+  textColor: "#111111",
+  mutedTextColor: "#6b7280",
+
+  borderRadius: "22px",
+  cardRadius: "22px",
+},
 };
 
 module.exports = a1hibachipartyConfig;

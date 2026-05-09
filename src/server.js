@@ -1,6 +1,7 @@
 // 只负责连接数据库并启动服务。
-
-require("dotenv").config();
+require("dotenv").config({
+  path: process.env.NODE_ENV === "production" ? ".env" : ".env.local",
+});
 
 const app = require("./app");
 const connectDB = require("./config/db");

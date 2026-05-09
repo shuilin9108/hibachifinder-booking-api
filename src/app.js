@@ -2,7 +2,7 @@
 require("dotenv").config({
   path: process.env.NODE_ENV === "production" ? ".env" : ".env.local",
 });
-
+const adminDashboardRouter = require("./routes/adminDashboard");
 const authRoutes = require("./routes/authRoutes");
 const express = require("express");
 const cors = require("cors");
@@ -85,6 +85,7 @@ app.use("/api/auth", authRoutes);
 
 app.use("/api/admin/bookings", adminBookingsRouter);
 app.use("/api/admin/merchant-settings", adminMerchantSettingsRouter);
+app.use("/api/admin/dashboard", adminDashboardRouter);
 app.use("/api/admin/upload", adminUploadRouter);
 app.get("/", (req, res) => {
   res.json({

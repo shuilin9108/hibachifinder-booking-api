@@ -440,10 +440,20 @@ googleSheets: {
     },
   },
 
-  theme: {
-    primaryColor: "#111827",
-    cardRadius: "18px",
-  },
+theme: {
+  primaryColor: "#2563eb",
+  secondaryColor: "#0f172a",
+  accentColor: "#38bdf8",
+
+  backgroundColor: "#f4f8ff",
+  cardBackground: "#ffffff",
+
+  textColor: "#111111",
+  mutedTextColor: "#64748b",
+
+  borderRadius: "22px",
+  cardRadius: "22px",
+},
 };
 
 module.exports = hibachiNearbyConfig;
