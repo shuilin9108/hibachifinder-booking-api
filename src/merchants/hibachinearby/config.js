@@ -53,12 +53,14 @@ googleSheets: {
   webhookUrl: process.env.HIBACHINEARBY_GOOGLE_SHEET_WEBHOOK_URL || "",
 },
 
-    googleCalendar: {
-      enabled: true,
-      calendarId:
-        "c_1f6fbd89d1b055dd325e253a4eabf1584f7c66543e1ac3cde025e9db0d0a39fe@group.calendar.google.com",
-      webhookUrl: "",
-    },
+googleCalendar: {
+  enabled: true,
+  calendarId:
+    "c_1f6fbd89d1b055dd325e253a4eabf1584f7c66543e1ac3cde025e9db0d0a39fe@group.calendar.google.com",
+  calendarUrl:
+    "https://calendar.google.com/calendar/u/0/r?cid=c_1f6fbd89d1b055dd325e253a4eabf1584f7c66543e1ac3cde025e9db0d0a39fe@group.calendar.google.com",
+  webhookUrl: "",
+},
     stripe: {
       enabled: true,
       depositPaymentLink: "https://buy.stripe.com/aFabJ32Dj3QE27k8Qe3wQ02",

@@ -53,12 +53,14 @@ googleSheets: {
   webhookUrl: process.env.KOBE_GOOGLE_SHEET_WEBHOOK_URL || "",
 },
 
-    googleCalendar: {
-      enabled: true,
-      calendarId:
-        "c_94fcff40fa42b40823b0b8e330c0886f641a2191f559b5379cbde463cdf24084@group.calendar.google.com",
-      webhookUrl: "",
-    },
+googleCalendar: {
+  enabled: true,
+  calendarId:
+    "c_94fcff40fa42b40823b0b8e330c0886f641a2191f559b5379cbde463cdf24084@group.calendar.google.com",
+  calendarUrl:
+    "https://calendar.google.com/calendar/u/0/r?cid=c_94fcff40fa42b40823b0b8e330c0886f641a2191f559b5379cbde463cdf24084@group.calendar.google.com",
+  webhookUrl: "",
+},
 
     stripe: {
       enabled: true,

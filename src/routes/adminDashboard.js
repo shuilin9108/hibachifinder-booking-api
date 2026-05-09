@@ -4,7 +4,7 @@ const express = require("express");
 const Booking = require("../models/Booking");
 
 const router = express.Router();
-
+const getMerchantConfig = require("../core/merchants/getMerchantConfig");
 function getStartOfToday() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -18,6 +18,7 @@ router.get("/:merchantSlug", async (req, res) => {
   try {
     const { merchantSlug } = req.params;
     const { adminEmail } = req.query;
+    const merchantConfig = getMerchantConfig(merchantSlug);
 
     if (!adminEmail) {
       return res.status(401).json({
@@ -66,18 +67,24 @@ router.get("/:merchantSlug", async (req, res) => {
         .filter(Boolean),
     ).size;
 
-    return res.json({
-      success: true,
-      merchantSlug,
-      summary: {
-        todayOrders,
-        expectedRevenue,
-        paidRevenue,
-        outstandingBalance,
-        assignedChefs,
-        totalActiveOrders: bookings.length,
-      },
-    });
+return res.json({
+  success: true,
+  merchantSlug,
+  merchant: {
+    integrations: {
+      googleCalendar: merchantConfig?.integrations?.googleCalendar || {},
+      googleSheets: merchantConfig?.integrations?.googleSheets || {},
+    },
+  },
+  summary: {
+    todayOrders,
+    expectedRevenue,
+    paidRevenue,
+    outstandingBalance,
+    assignedChefs,
+    totalActiveOrders: bookings.length,
+  },
+});
   } catch (error) {
     console.error("ADMIN DASHBOARD ERROR:", error);
 

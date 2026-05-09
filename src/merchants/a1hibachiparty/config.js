@@ -52,12 +52,14 @@ googleSheets: {
   webhookUrl: process.env.A1HIBACHIPARTY_GOOGLE_SHEET_WEBHOOK_URL || "",
 },
 
-    googleCalendar: {
-      enabled: true,
-      calendarId:
-        "c_b5a5d74b77f681b0831c3091e61b5fb009f8941e4ad3addcdc08f915f5ab90d0@group.calendar.google.com",
-      webhookUrl: "",
-    },
+googleCalendar: {
+  enabled: true,
+  calendarId:
+    "c_b5a5d74b77f681b0831c3091e61b5fb009f8941e4ad3addcdc08f915f5ab90d0@group.calendar.google.com",
+  calendarUrl:
+    "https://calendar.google.com/calendar/u/0/r?cid=c_b5a5d74b77f681b0831c3091e61b5fb009f8941e4ad3addcdc08f915f5ab90d0@group.calendar.google.com",
+  webhookUrl: "",
+},
 
     stripe: {
       enabled: true,
