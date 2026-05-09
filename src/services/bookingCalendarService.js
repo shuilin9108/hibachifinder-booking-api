@@ -323,7 +323,17 @@ async function upsertBookingCalendarEvent(booking, mode = "initial") {
 const url = shouldSendUpdates
   ? `${baseUrl}?sendUpdates=all`
   : baseUrl;
-
+console.log("GOOGLE CALENDAR REQUEST DEBUG:");
+console.log({
+  url,
+  method:
+    mode === "invite_chef"
+      ? "PUT"
+      : existingEventId
+      ? "PATCH"
+      : "POST",
+  googleEvent,
+});
   const response = await fetch(url, {
     method: mode === "invite_chef" ? "PUT" : existingEventId ? "PATCH" : "POST",
     headers: {
