@@ -91,6 +91,13 @@ async function getMergedMerchantConfig(slug) {
       defaultConfig.thankYouRedirectUrl,
   });
 
+  if (merged.branding?.primaryColor) {
+    merged.theme = {
+      ...(merged.theme || {}),
+      primaryColor: merged.branding.primaryColor,
+    };
+  }
+
   return {
     ...merged,
     settings: {
