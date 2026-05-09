@@ -1,4 +1,5 @@
 require("dotenv").config();
+// src/app.js 是整个 booking-engine-api 的“总入口文件”。
 const authRoutes = require("./routes/authRoutes");
 const express = require("express");
 const cors = require("cors");
@@ -9,6 +10,9 @@ const merchantsRouter = require("./routes/merchants");
 const bookingsRouter = require("./routes/bookings");
 const webhookRoutes = require("./routes/webhook");
 const paymentsRouter = require("./routes/payments");
+const adminBookingsRouter = require("./routes/adminBookings");
+const adminMerchantSettingsRouter = require("./routes/adminMerchantSettings");
+
 const app = express();
 
 let isConnected = false;
@@ -43,12 +47,12 @@ app.use(
       "https://hibachinearby.com",
 
       "https://www.kobehibachicatering.com",
-      "https://kobehibachicatering.com"
+      "https://kobehibachicatering.com",
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
     credentials: false,
-  })
+  }),
 );
 
 app.use(express.json());
@@ -74,8 +78,8 @@ app.use("/api/bookings", bookingsRouter);
 app.use("/api/payments", paymentsRouter);
 app.use("/api/auth", authRoutes);
 
-const adminBookingsRouter = require("./routes/adminBookings");
 app.use("/api/admin/bookings", adminBookingsRouter);
+app.use("/api/admin/merchant-settings", adminMerchantSettingsRouter);
 
 app.get("/", (req, res) => {
   res.json({
