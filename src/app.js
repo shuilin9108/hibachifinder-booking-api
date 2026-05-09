@@ -1,5 +1,8 @@
-require("dotenv").config();
 // src/app.js 是整个 booking-engine-api 的“总入口文件”。
+require("dotenv").config({
+  path: process.env.NODE_ENV === "production" ? ".env" : ".env.local",
+});
+
 const authRoutes = require("./routes/authRoutes");
 const express = require("express");
 const cors = require("cors");
@@ -12,7 +15,7 @@ const webhookRoutes = require("./routes/webhook");
 const paymentsRouter = require("./routes/payments");
 const adminBookingsRouter = require("./routes/adminBookings");
 const adminMerchantSettingsRouter = require("./routes/adminMerchantSettings");
-
+const adminUploadRouter = require("./routes/adminUpload");
 const app = express();
 
 let isConnected = false;
@@ -28,7 +31,9 @@ async function connectMongo() {
   });
 
   isConnected = true;
-  console.log("✅ MongoDB Connected");
+  console.log(
+  `✅ MongoDB Connected -> ${process.env.MONGODB_DB_NAME}`,
+);
 }
 
 app.use(
@@ -80,7 +85,7 @@ app.use("/api/auth", authRoutes);
 
 app.use("/api/admin/bookings", adminBookingsRouter);
 app.use("/api/admin/merchant-settings", adminMerchantSettingsRouter);
-
+app.use("/api/admin/upload", adminUploadRouter);
 app.get("/", (req, res) => {
   res.json({
     success: true,
