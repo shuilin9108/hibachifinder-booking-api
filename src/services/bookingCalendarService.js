@@ -233,7 +233,12 @@ function buildCalendarAttendees(merchant, payload, options = {}) {
 }
 function buildGoogleCalendarEvent(merchant, payload, options = {}) {
   const dateTime = parseEventDateTime(payload.date, payload.time);
-
+  console.log("GOOGLE EVENT DEBUG:");
+  console.log({
+    payloadDate: payload.date,
+    payloadTime: payload.time,
+    parsedDateTime: dateTime,
+  });
   if (!dateTime) {
     throw new Error("Missing or invalid event date/time.");
   }
