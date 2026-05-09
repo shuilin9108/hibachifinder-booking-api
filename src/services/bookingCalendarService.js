@@ -42,9 +42,11 @@ function getTravelFeeText(pricing) {
 function parseEventDateTime(date, time) {
   if (!date) return null;
 
-  const cleanTime = time || "12:00";
-  const [yearRaw, monthRaw, dayRaw] = String(date).split("-");
-  const [hourRaw, minuteRaw] = String(cleanTime).split(":");
+  const cleanDate = String(date).slice(0, 10);
+  const cleanTime = String(time || "12:00").slice(0, 5);
+
+  const [yearRaw, monthRaw, dayRaw] = cleanDate.split("-");
+  const [hourRaw, minuteRaw] = cleanTime.split(":");
 
   const year = Number(yearRaw);
   const month = Number(monthRaw);
@@ -52,22 +54,20 @@ function parseEventDateTime(date, time) {
   const hour = Number(hourRaw);
   const minute = Number(minuteRaw || 0);
 
-  if (
-    [year, month, day, hour, minute].some((value) => Number.isNaN(value))
-  ) {
+  if ([year, month, day, hour, minute].some(Number.isNaN)) {
     return null;
   }
 
   const start = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
   const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
 
-  function formatLocalDateTime(value) {
+  function formatDateTime(value) {
     return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, "0")}-${String(value.getUTCDate()).padStart(2, "0")}T${String(value.getUTCHours()).padStart(2, "0")}:${String(value.getUTCMinutes()).padStart(2, "0")}:00`;
   }
 
   return {
-    start: formatLocalDateTime(start),
-    end: formatLocalDateTime(end),
+    start: formatDateTime(start),
+    end: formatDateTime(end),
   };
 }
 
