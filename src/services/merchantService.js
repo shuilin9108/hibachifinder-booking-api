@@ -157,6 +157,17 @@ async function getMergedMerchantConfig(slug) {
       defaultConfig.thankYouRedirectUrl,
   });
 
+  const finalExtraProteinCatalog =
+    Array.isArray(merged.extraProteinCatalog) &&
+    merged.extraProteinCatalog.length > 0
+      ? merged.extraProteinCatalog
+      : defaultConfig.extraProteinCatalog || [];
+
+  const finalAddOns =
+    Array.isArray(merged.addOns) && merged.addOns.length > 0
+      ? merged.addOns
+      : defaultConfig.addOns || [];
+
   if (merged.branding?.primaryColor) {
     merged.theme = {
       ...(merged.theme || {}),
@@ -166,6 +177,8 @@ async function getMergedMerchantConfig(slug) {
 
   return {
     ...merged,
+    extraProteinCatalog: finalExtraProteinCatalog,
+    addOns: finalAddOns,
     settings: {
       ...(merged.settings || {}),
       ...(cleaned.settings || {}),

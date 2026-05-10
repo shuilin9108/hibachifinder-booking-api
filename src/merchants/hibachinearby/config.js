@@ -190,10 +190,7 @@ googleCalendar: {
   ],
 
 
-  extraProteinCatalog: [
-  ],
-
-  addOns: [
+addOns: [
 
     {
       id: "fried-rice",

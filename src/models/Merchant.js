@@ -57,6 +57,15 @@ const MerchantSchema = new mongoose.Schema(
       merchantEmails: [String],
     },
 
+    extraProteinCatalog: [
+      {
+        id: String,
+        label: String,
+        unitPrice: Number,
+        unitLabel: String,
+      },
+    ],
+
     chefs: [
       {
         email: {
