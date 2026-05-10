@@ -53,6 +53,9 @@ app.use(
 
       "https://www.kobehibachicatering.com",
       "https://kobehibachicatering.com",
+
+      "https://www.shuilink.com",
+      "https://shuilink.com",
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
