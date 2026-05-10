@@ -180,59 +180,9 @@ googleCalendar: {
 
 
   extraProteinCatalog: [
-    { id: "extra-chicken", label: "Extra Chicken", proteinId: "chicken", unitPrice: 10 },
-    { id: "extra-steak", label: "Extra Steak", proteinId: "steak", unitPrice: 10 },
-    { id: "extra-shrimp", label: "Extra Shrimp", proteinId: "shrimp", unitPrice: 10 },
-    { id: "extra-salmon", label: "Extra Salmon", proteinId: "salmon", unitPrice: 10 },
-    { id: "extra-scallops", label: "Extra Scallops", proteinId: "scallops", unitPrice: 10 },
-    { id: "extra-filet-mignon", label: "Extra Filet Mignon", proteinId: "filet-mignon", unitPrice: 15 },
-    { id: "extra-lobster-tail", label: "Extra Lobster Tail", proteinId: "lobster-tail", unitPrice: 20 },
   ],
 
   addOns: [
-    {
-      id: "extra-chicken",
-      label: "Extra Chicken",
-      unitPrice: 10,
-      unitLabel: "each",
-    },
-    {
-      id: "extra-steak",
-      label: "Extra Steak",
-      unitPrice: 10,
-      unitLabel: "each",
-    },
-    {
-      id: "extra-shrimp",
-      label: "Extra Shrimp",
-      unitPrice: 10,
-      unitLabel: "each",
-    },
-    {
-      id: "extra-scallops",
-      label: "Extra Scallops",
-      unitPrice: 10,
-      unitLabel: "each",
-    },
-    {
-      id: "extra-salmon",
-      label: "Extra Salmon",
-      unitPrice: 10,
-      unitLabel: "each",
-    },
-    { id: "extra-tofu", label: "Extra Tofu", unitPrice: 10, unitLabel: "each" },
-    {
-      id: "extra-filet-mignon",
-      label: "Extra Filet Mignon",
-      unitPrice: 15,
-      unitLabel: "each",
-    },
-    {
-      id: "extra-lobster-tail",
-      label: "Extra Lobster Tail",
-      unitPrice: 15,
-      unitLabel: "each",
-    },
     {
       id: "fried-rice",
       label: "Fried Rice",
