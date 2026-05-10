@@ -5,6 +5,7 @@ const { sendBookingEmails } = require("../services/bookingEmailService");
 const { upsertBookingCalendarEvent } = require("../services/bookingCalendarService");
 const { calculatePricing } = require("../core/pricing/pricingEngine");
 const getMerchantConfig = require("../core/merchants/getMerchantConfig");
+const { getMergedMerchantConfig } = require("../services/merchantService");
 const Booking = require("../models/Booking");
 const { appendBookingRow } = require("../integrations/sheets/appendBookingRow");
 const { bookingSheetMapper } = require("../core/bookings/bookingSheetMapper");
@@ -444,7 +445,17 @@ router.post("/", async (req, res) => {
     });
   }
 
-  const { merchantSlug, merchant } = getPayloadMerchant(payload);
+  const merchantSlug = payload?.merchantSlug || "kobe";
+  const merchant =
+    (await getMergedMerchantConfig(merchantSlug)) || getMerchantConfig(merchantSlug);
+
+  if (!merchant) {
+    return res.status(400).json({
+      success: false,
+      error: `Invalid merchant slug: ${merchantSlug}.`,
+    });
+  }
+
   const formForPricing = buildFormLikeObjectFromPayload(payload);
   const recalculatedPricing = calculatePricing(formForPricing, merchant);
 
