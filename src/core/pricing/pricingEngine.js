@@ -432,9 +432,12 @@ function calculatePricing(form, merchant) {
     ...(merchant.addOns || []),
   ];
 
-  if (allAddOns.length && form.addOns) {
+  const submittedAddOns =
+    form.addOns || form.selection?.addOns || {};
+
+  if (allAddOns.length) {
     for (const addOn of allAddOns) {
-      const quantity = Number(form.addOns[addOn.id] || 0);
+      const quantity = Number(submittedAddOns[addOn.id] || 0);
       addOnTotal += quantity * Number(addOn.unitPrice || 0);
     }
   }
