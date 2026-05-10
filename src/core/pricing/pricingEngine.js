@@ -427,8 +427,13 @@ function calculatePricing(form, merchant) {
 
   let addOnTotal = 0;
 
-  if (merchant.addOns && form.addOns) {
-    for (const addOn of merchant.addOns) {
+  const allAddOns = [
+    ...(merchant.extraProteinCatalog || []),
+    ...(merchant.addOns || []),
+  ];
+
+  if (allAddOns.length && form.addOns) {
+    for (const addOn of allAddOns) {
       const quantity = Number(form.addOns[addOn.id] || 0);
       addOnTotal += quantity * Number(addOn.unitPrice || 0);
     }
