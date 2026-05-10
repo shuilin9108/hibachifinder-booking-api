@@ -432,8 +432,10 @@ function calculatePricing(form, merchant) {
     ...(merchant.addOns || []),
   ];
 
-  const submittedAddOns =
-    form.addOns || form.selection?.addOns || {};
+  const submittedAddOns = {
+    ...(form.selection?.addOns || {}),
+    ...(form.addOns || {}),
+  };
 
   if (allAddOns.length) {
     for (const addOn of allAddOns) {
@@ -639,7 +641,7 @@ function calculatePricing(form, merchant) {
 
       addOns: {
         total: addOnTotal,
-        items: Object.entries(form.addOns || {}).map(([id, quantity]) => ({
+        items: Object.entries(submittedAddOns || {}).map(([id, quantity]) => ({
           id,
           quantity,
         })),
