@@ -57,6 +57,37 @@ const MerchantSchema = new mongoose.Schema(
       merchantEmails: [String],
     },
 
+    chefs: [
+      {
+        email: {
+          type: String,
+          trim: true,
+          lowercase: true,
+        },
+        platformUserId: {
+          type: String,
+          trim: true,
+        },
+        name: String,
+        status: {
+          type: String,
+          enum: ["invited", "active", "inactive"],
+          default: "invited",
+        },
+        role: {
+          type: String,
+          default: "merchant_chef",
+        },
+        profile: {
+          displayName: String,
+          avatarUrl: String,
+          videoUrl: String,
+          reviewUrl: String,
+          bio: String,
+        },
+      },
+    ],
+
     redirects: {
       thankYouRedirectUrl: String,
     },

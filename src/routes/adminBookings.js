@@ -119,7 +119,11 @@ router.patch("/:bookingId/assign-chef", requireAdminUser, async (req, res) => {
       });
     }
 
-    const { assignedChefEmail } = req.body;
+    const {
+      assignedChefEmail,
+      assignedChefPlatformUserId,
+      assignedChefName,
+    } = req.body;
 
     const booking = await Booking.findOne({
       bookingId: req.params.bookingId,
@@ -142,7 +146,11 @@ router.patch("/:bookingId/assign-chef", requireAdminUser, async (req, res) => {
       });
     }
 
-    booking.assignedChefEmail = assignedChefEmail;
+    booking.assignedChefEmail = String(assignedChefEmail || "").trim().toLowerCase();
+    booking.assignedChefPlatformUserId = String(
+      assignedChefPlatformUserId || "",
+    ).trim();
+    booking.assignedChefName = String(assignedChefName || "").trim();
     booking.updatedAt = new Date().toISOString();
 
     await booking.save();

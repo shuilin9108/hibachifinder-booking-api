@@ -50,6 +50,20 @@ const bookingSchema = new mongoose.Schema(
     assignedChefEmail: {
       type: String,
       default: null,
+      lowercase: true,
+      trim: true,
+    },
+
+    assignedChefPlatformUserId: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    assignedChefName: {
+      type: String,
+      default: "",
+      trim: true,
     },
 
     calendarSync: {

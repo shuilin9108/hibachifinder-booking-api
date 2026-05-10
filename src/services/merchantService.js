@@ -1,6 +1,7 @@
 // 合并默认商家配置和 MongoDB 后台设置，让 booking engine 可以读取最新商家配置。
 
 const Merchant = require("../models/Merchant");
+const AdminUser = require("../models/AdminUser");
 const getMerchantConfig = require("../core/merchants/getMerchantConfig");
 
 function isPlainObject(value) {
@@ -65,6 +66,71 @@ function toCleanObject(doc) {
   };
 }
 
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+async function normalizeChefs(chefs = []) {
+  if (!Array.isArray(chefs)) return [];
+
+  const cleaned = chefs
+    .map((chef) => ({
+      email: normalizeEmail(chef.email),
+      platformUserId: String(chef.platformUserId || "").trim(),
+      name: String(chef.name || "").trim(),
+      status: chef.status || "invited",
+      role: chef.role || "merchant_chef",
+      profile: {
+        displayName: chef.profile?.displayName || chef.name || "",
+        avatarUrl: chef.profile?.avatarUrl || "",
+        videoUrl: chef.profile?.videoUrl || "",
+        reviewUrl: chef.profile?.reviewUrl || "",
+        bio: chef.profile?.bio || "",
+      },
+    }))
+    .filter((chef) => chef.email || chef.platformUserId);
+
+  const emails = cleaned.map((chef) => chef.email).filter(Boolean);
+  const platformUserIds = cleaned
+    .map((chef) => chef.platformUserId)
+    .filter(Boolean);
+
+  const matchedUsers = await AdminUser.find({
+    $or: [
+      emails.length ? { email: { $in: emails } } : null,
+      platformUserIds.length ? { platformUserId: { $in: platformUserIds } } : null,
+    ].filter(Boolean),
+  }).lean();
+
+  const byEmail = new Map(matchedUsers.map((user) => [normalizeEmail(user.email), user]));
+  const byPlatformUserId = new Map(
+    matchedUsers.map((user) => [user.platformUserId, user]),
+  );
+
+  return cleaned.map((chef) => {
+    const matchedUser =
+      byEmail.get(chef.email) || byPlatformUserId.get(chef.platformUserId);
+
+    return {
+      ...chef,
+      email: chef.email || normalizeEmail(matchedUser?.email),
+      platformUserId: chef.platformUserId || matchedUser?.platformUserId || "",
+      name: chef.name || matchedUser?.name || chef.profile.displayName || "",
+      status: matchedUser?.isActive ? "active" : chef.status || "invited",
+      role: chef.role || "merchant_chef",
+      profile: {
+        ...chef.profile,
+        displayName:
+          chef.profile.displayName ||
+          chef.name ||
+          matchedUser?.name ||
+          normalizeEmail(matchedUser?.email) ||
+          "",
+      },
+    };
+  });
+}
+
 async function getMerchantSettings(slug) {
   return Merchant.findOne({ slug }).lean();
 }
@@ -125,6 +191,7 @@ async function upsertMerchantSettings({ slug, updates = {}, updatedBy = "" }) {
     notifications: updates.notifications || {},
     redirects: updates.redirects || {},
     settings: updates.settings || {},
+    chefs: await normalizeChefs(updates.chefs || []),
     updatedBy,
   };
 
@@ -151,5 +218,6 @@ module.exports = {
   deepMerge,
   getMerchantSettings,
   getMergedMerchantConfig,
+  normalizeChefs,
   upsertMerchantSettings,
 };

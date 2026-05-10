@@ -1,13 +1,18 @@
-const kobeConfig = {
-  slug: "kobe",
+// 定义 Hibachi By ShuiLink 商家的前端 booking 配置、价格规则、文案和跳转链接。
+
+const hibachiByShuilinkConfig = {
+  slug: "hibachi-by-shuilink",
   preset: "hibachi",
 
+  website: "https://www.shuilink.com/hibachi/index.html",
+  thankYouRedirectUrl: "/thank-you/hibachi-by-shuilink",
+
   business: {
-    name: "Kobe Hibachi Catering",
+    name: "Hibachi By ShuiLink",
     address: "5301 8th Ave, Brooklyn, NY 11220",
-    phone: "(347) 793-6589",
-    email: "kobehibachicatering@gmail.com",
-    logoUrl: "/logos/kobe.png",
+    phone: "631-371-2706",
+    email: "hibachi@shuilink.com",
+    logoUrl: "/logos/hibachi-by-shuilink-logo-dark.png",
     homeBaseLabel: "Brooklyn, NY",
   },
 
@@ -55,11 +60,12 @@ const kobeConfig = {
 
   proteinCatalog: [
     { id: "chicken", label: "Chicken", category: "regular", upgradeFee: 0 },
-    { id: "shrimp", label: "Shrimp", category: "regular", upgradeFee: 0 },
     { id: "steak", label: "Steak", category: "regular", upgradeFee: 0 },
+    { id: "shrimp", label: "Shrimp", category: "regular", upgradeFee: 0 },
     { id: "salmon", label: "Salmon", category: "regular", upgradeFee: 0 },
     { id: "tofu", label: "Tofu", category: "regular", upgradeFee: 0 },
     { id: "scallops", label: "Scallops", category: "regular", upgradeFee: 0 },
+    { id: "squid", label: "Squid", category: "regular", upgradeFee: 0 },
     {
       id: "filet-mignon",
       label: "Filet Mignon",
@@ -126,13 +132,67 @@ const kobeConfig = {
     },
   ],
 
+
+  extraProteinCatalog: [
+    {
+      id: "extra-chicken",
+      label: "Extra Chicken",
+      proteinId: "chicken",
+      unitPrice: 10,
+    },
+    {
+      id: "extra-steak",
+      label: "Extra Steak",
+      proteinId: "steak",
+      unitPrice: 10,
+    },
+    {
+      id: "extra-shrimp",
+      label: "Extra Shrimp",
+      proteinId: "shrimp",
+      unitPrice: 10,
+    },
+    {
+      id: "extra-salmon",
+      label: "Extra Salmon",
+      proteinId: "salmon",
+      unitPrice: 10,
+    },
+    {
+      id: "extra-scallops",
+      label: "Extra Scallops",
+      proteinId: "scallops",
+      unitPrice: 10,
+    },
+    {
+      id: "extra-filet-mignon",
+      label: "Extra Filet Mignon",
+      proteinId: "filet-mignon",
+      unitPrice: 15,
+    },
+    {
+      id: "extra-lobster-tail",
+      label: "Extra Lobster Tail",
+      proteinId: "lobster-tail",
+      unitPrice: 20,
+    },
+  ],
+
   addOns: [
     {
       id: "extra-regular-protein",
       label: "Extra Regular Protein",
       unitPrice: 10,
       unitLabel: "each",
-      choices: ["Chicken", "Steak", "Shrimp", "Scallop", "Salmon", "Tofu"],
+      choices: [
+        "Chicken",
+        "Steak",
+        "Shrimp",
+        "Scallops",
+        "Salmon",
+        "Tofu",
+        "Squid",
+      ],
     },
     {
       id: "extra-premium-protein",
@@ -168,18 +228,38 @@ const kobeConfig = {
   ],
 
   travelFee: {
-    model: "distance_threshold_plus_per_mile",
+    model: "distance_threshold_plus_base_and_per_mile",
     freeMiles: 30,
+    baseFeeOverFreeLimit: 30,
     pricePerMileOverFreeLimit: 1,
     minimumFee: 0,
-
-    // ✅ UI配置
     inputLabel: "Estimated Travel Distance (miles) *",
     inputPlaceholder: "Enter miles",
-
-    // ✅ 展示给客户看的
     helperText:
-      "Distance from our base at 5301 8th Ave, Brooklyn, NY. First 30 miles included. After 30 miles, $1 per mile.",
+      "Distance from our Brooklyn base (5301 8th Ave). First 30 miles included. Beyond 30 miles, a $30 base travel fee applies plus $1 per additional mile.",
+  },
+
+  integrations: {
+    googleCalendar: {
+      enabled: true,
+      calendarId:
+        "c_ed992f55f916fa3dc3fb434c9792427119482ebe0c50c91ea492337edb8c12e5@group.calendar.google.com",
+    },
+    googleSheets: {
+      enabled: true,
+      spreadsheetId: "1JgWe66BEEHWqzQG7PFdBxPoL4Mu-JJmhoL29gGZxoIw",
+      sheetName: "Bookings",
+    },
+    resend: {
+      enabled: true,
+      fromEmail: "hibachi@shuilink.com",
+      merchantNotificationEmail: "hibachi@shuilink.com",
+    },
+  },
+
+  notifications: {
+    fromEmail: "hibachi@shuilink.com",
+    merchantEmails: ["hibachi@shuilink.com"],
   },
 
   payment: {
@@ -191,21 +271,21 @@ const kobeConfig = {
       label: "Optional $50 Deposit",
       incentive:
         "Pay $50 now to secure your spot faster and get priority scheduling.",
-      stripePaymentLink: "https://buy.stripe.com/9B6eVeabl5qXfbQ85Y2kw00",
+      stripePaymentLink: "https://buy.stripe.com/cNiaEXcSP0JD0FT2c88Zq04",
     },
+    tipOptions: [20, 25, 30],
     notes:
       "Deposit is optional. Our team will confirm availability and final pricing before requiring any additional payment.",
   },
 
   tax: {
-    collectTax: true,
+    collectTax: false,
     model: "destination_based_sales_tax",
     fallbackRates: {
       nyStateBaseRate: 0.04,
       nycCombinedRate: 0.08875,
     },
-    notes:
-      "Tax handling should be based on destination/address jurisdiction. Leave disabled until taxable treatment is confirmed for this service model.",
+    notes: "Tax handling should be based on destination/address jurisdiction.",
   },
 
   promotions: {
@@ -280,46 +360,6 @@ const kobeConfig = {
         question: "What is 3 + 6?",
         acceptedAnswers: ["9", "nine"],
       },
-      {
-        id: "sum-3",
-        question: "What is 4 + 5?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-4",
-        question: "What is 5 + 4?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-5",
-        question: "What is 6 + 3?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-6",
-        question: "What is 7 + 2?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-7",
-        question: "What is 8 + 1?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-8",
-        question: "What is 1 + 8?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-9",
-        question: "What is 10 - 1?",
-        acceptedAnswers: ["9", "nine"],
-      },
-      {
-        id: "sum-10",
-        question: "What is 12 - 3?",
-        acceptedAnswers: ["9", "nine"],
-      },
     ],
   },
 
@@ -329,12 +369,13 @@ const kobeConfig = {
       {
         id: "property-damage",
         label:
-          "Kobe Hibachi Catering is not responsible for any property damage during the event.",
+          "Hibachi By ShuiLink is not responsible for any property damage during the event.",
         required: true,
       },
       {
         id: "travel-fee",
-        label: "that a travel fee may apply based on event location.",
+        label:
+          "I understand that a travel fee may apply based on event location.",
         required: true,
       },
     ],
@@ -351,7 +392,7 @@ const kobeConfig = {
 
   content: {
     bookingPage: {
-      title: "Book Your Kobe Hibachi Experience",
+      title: "Book Your Hibachi By ShuiLink Experience",
       subtitle:
         "Private hibachi catering across NYC and surrounding areas, with service generally available within about 3 hours of New York City.",
       submitLabel: "Request My Booking",
@@ -373,4 +414,4 @@ const kobeConfig = {
   },
 };
 
-module.exports = kobeConfig;
+module.exports = hibachiByShuilinkConfig;
