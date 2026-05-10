@@ -5,7 +5,7 @@ const hibachiByShuilinkConfig = {
   preset: "hibachi",
 
   website: "https://www.shuilink.com/hibachi/index.html",
-  thankYouRedirectUrl: "/thank-you/hibachi-by-shuilink",
+  thankYouRedirectUrl: "https://www.shuilink.com/hibachi/thank-you.html",
 
   business: {
     name: "Hibachi By ShuiLink",
