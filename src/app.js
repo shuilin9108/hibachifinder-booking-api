@@ -56,6 +56,11 @@ app.use(
 
       "https://www.shuilink.com",
       "https://shuilink.com",
+
+      "https://hibachifinder.com",
+      "https://www.hibachifinder.com",
+      "https://booking.hibachifinder.com",
+      "https://app.hibachifinder.com",
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
