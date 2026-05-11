@@ -96,6 +96,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin/bookings", adminBookingsRouter);
 app.use("/api/admin/merchant-settings", adminMerchantSettingsRouter);
 app.use("/api/admin/dashboard", adminDashboardRouter);
+app.use("/api/admin/reviews", adminReviewsRouter);
 app.use("/api/admin/upload", adminUploadRouter);
 app.get("/", (req, res) => {
   res.json({
