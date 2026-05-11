@@ -51,7 +51,13 @@ const reviewSchema = new mongoose.Schema(
 
     source: {
       type: String,
-      enum: ["guest_form", "customer_account", "admin_import", "platform_seed"],
+      enum: [
+        "guest_form",
+        "customer_account",
+        "verified_booking_flow",
+        "admin_import",
+        "platform_seed",
+      ],
       default: "guest_form",
       index: true,
     },
@@ -120,6 +126,17 @@ const reviewSchema = new mongoose.Schema(
 
 reviewSchema.index({ reviewType: 1, merchantSlug: 1, status: 1 });
 reviewSchema.index({ reviewType: 1, chefId: 1, status: 1 });
+
+// 一个 completed booking 最多只能给 merchant 留一条 review，最多只能给 chef 留一条 review。
+reviewSchema.index(
+  { bookingId: 1, reviewType: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      bookingId: { $type: "objectId" },
+    },
+  },
+);
 
 const Review = mongoose.models.Review || mongoose.model("Review", reviewSchema);
 

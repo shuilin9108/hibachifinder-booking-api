@@ -70,6 +70,13 @@ router.post("/", async (req, res) => {
 
     res.status(201).json({ success: true, review });
   } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        error: "This booking has already submitted a review for this target.",
+      });
+    }
+
     res.status(400).json({ success: false, error: error.message });
   }
 });
