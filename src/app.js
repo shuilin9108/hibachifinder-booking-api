@@ -1,3 +1,4 @@
+const reviewSummaryRouter = require("./routes/reviewSummary").default || require("./routes/reviewSummary");
 const adminReviewsRouter = require("./routes/adminReviews").default || require("./routes/adminReviews");
 const chefsRouter = require("./routes/chefs").default || require("./routes/chefs");
 const customersRouter = require("./routes/customers").default || require("./routes/customers");
@@ -95,6 +96,7 @@ app.use("/api/merchants", merchantsRouter);
 app.use("/api/bookings", bookingsRouter);
 app.use("/api/payments", paymentsRouter);
 app.use("/api/reviews", reviewsRouter);
+app.use("/api/review-summary", reviewSummaryRouter);
 app.use("/api/chefs", chefsRouter);
 app.use("/api/customers", customersRouter);
 app.use("/api/customer-dashboard", customerDashboardRouter);
