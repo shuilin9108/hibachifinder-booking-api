@@ -1,15 +1,32 @@
 // 负责校验后台用户身份，并根据邮箱识别 platform_admin / merchant_owner / staff / chef 权限。
+const jwt = require("jsonwebtoken");
 const AdminUser = require("../models/AdminUser");
 const { getAdminUserByEmail } = require("../data/adminUsers");
 
 async function requireAdminUser(req, res, next) {
   try {
-    const adminEmail = String(req.query.adminEmail || "").trim().toLowerCase();
+    const authHeader = req.headers.authorization || "";
+    const bearerToken = authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : "";
+
+    let tokenUser = null;
+
+    if (bearerToken) {
+      tokenUser = jwt.verify(
+        bearerToken,
+        process.env.ADMIN_JWT_SECRET || "dev-admin-secret-change-me",
+      );
+    }
+
+    const adminEmail = String(
+      tokenUser?.email || req.query.adminEmail || "",
+    ).trim().toLowerCase();
 
     if (!adminEmail) {
       return res.status(401).json({
         success: false,
-        error: "Missing adminEmail",
+        error: "Missing admin credentials",
       });
     }
 

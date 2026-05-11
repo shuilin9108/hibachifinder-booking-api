@@ -1,5 +1,6 @@
 // 处理 Google 登录：验证 Google Token → 查询 MongoDB 用户 → 返回角色与权限
 
+const jwt = require("jsonwebtoken");
 const { verifyGoogleIdToken } = require("../services/googleAuthService");
 const {
   findAdminUserByEmail,
@@ -31,8 +32,21 @@ const adminUser = await findAdminUserByEmail(googleUser.email);
     // 4️⃣ 构建权限
     const permissions = buildPermissions(adminUser);
 
+    const token = jwt.sign(
+      {
+        email: adminUser.email,
+        name: adminUser.name,
+        role: adminUser.role,
+        merchantSlugs: adminUser.merchantSlugs || [],
+        platformUserId: adminUser.platformUserId || null,
+      },
+      process.env.ADMIN_JWT_SECRET || "dev-admin-secret-change-me",
+      { expiresIn: "12h" },
+    );
+
     // 5️⃣ 返回前端
     return res.json({
+      token,
       user: {
         email: adminUser.email,
         name: adminUser.name,
