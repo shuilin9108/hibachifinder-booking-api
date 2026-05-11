@@ -91,6 +91,7 @@ app.use("/api/bookings", bookingsRouter);
 app.use("/api/payments", paymentsRouter);
 app.use("/api/reviews", reviewsRouter);
 app.use("/api/chefs", chefsRouter);
+app.use("/api/customers", customersRouter);
 app.use("/api/auth", authRoutes);
 
 app.use("/api/admin/bookings", adminBookingsRouter);
