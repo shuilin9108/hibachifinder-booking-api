@@ -54,7 +54,9 @@ router.post("/", async (req, res) => {
       reviewerType: req.body.reviewerType || "guest",
       reviewerUserId: req.body.reviewerUserId || null,
       reviewerDisplayName: req.body.reviewerDisplayName || "",
-      source: req.body.source || "guest_form",
+      source: req.body.bookingId
+        ? "verified_booking_flow"
+        : req.body.source || "guest_form",
       customerName: req.body.customerName || req.body.reviewerDisplayName || "Guest Customer",
       customerEmail: req.body.customerEmail || "",
       rating: Number(req.body.rating),
@@ -62,7 +64,7 @@ router.post("/", async (req, res) => {
       comment: req.body.comment,
       eventType: req.body.eventType || "",
       city: req.body.city || "",
-      verified: false,
+      verified: Boolean(req.body.bookingId),
       status: "pending",
     });
 
