@@ -2,6 +2,7 @@
 
 import express from "express";
 import Review from "../models/Review.js";
+import { getReviewStats } from "../services/reviewStatsService.js";
 
 const router = express.Router();
 
@@ -13,7 +14,12 @@ router.get("/merchant/:merchantSlug", async (req, res) => {
       status: "approved",
     }).sort({ createdAt: -1 });
 
-    res.json({ success: true, reviews });
+    const summary = await getReviewStats({
+      reviewType: "merchant",
+      merchantSlug: req.params.merchantSlug,
+    });
+
+    res.json({ success: true, reviews, summary });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -27,7 +33,12 @@ router.get("/chef/:chefId", async (req, res) => {
       status: "approved",
     }).sort({ createdAt: -1 });
 
-    res.json({ success: true, reviews });
+    const summary = await getReviewStats({
+      reviewType: "chef",
+      chefId: req.params.chefId,
+    });
+
+    res.json({ success: true, reviews, summary });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
