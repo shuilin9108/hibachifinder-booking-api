@@ -30,6 +30,32 @@ const reviewSchema = new mongoose.Schema(
       index: true,
     },
 
+    reviewerType: {
+      type: String,
+      enum: ["guest", "customer", "merchant_owner", "merchant_staff", "platform_admin"],
+      default: "guest",
+      index: true,
+    },
+
+    reviewerUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+      index: true,
+    },
+
+    reviewerDisplayName: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    source: {
+      type: String,
+      enum: ["guest_form", "customer_account", "admin_import", "platform_seed"],
+      default: "guest_form",
+      index: true,
+    },
+
     customerName: {
       type: String,
       default: "Guest Customer",
