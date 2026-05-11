@@ -1,3 +1,4 @@
+const customerAuthRouter = require("./routes/customerAuth").default || require("./routes/customerAuth");
 const reviewRankingsRouter = require("./routes/reviewRankings").default || require("./routes/reviewRankings");
 const reviewSummaryRouter = require("./routes/reviewSummary").default || require("./routes/reviewSummary");
 const adminReviewsRouter = require("./routes/adminReviews").default || require("./routes/adminReviews");
@@ -101,6 +102,7 @@ app.use("/api/review-summary", reviewSummaryRouter);
 app.use("/api/review-rankings", reviewRankingsRouter);
 app.use("/api/chefs", chefsRouter);
 app.use("/api/customers", customersRouter);
+app.use("/api/customer-auth", customerAuthRouter);
 app.use("/api/customer-dashboard", customerDashboardRouter);
 app.use("/api/auth", authRoutes);
 
