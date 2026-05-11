@@ -11,6 +11,41 @@ const bookingSchema = new mongoose.Schema(
       index: true,
     },
 
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      default: null,
+      index: true,
+    },
+
+    customerEmail: {
+      type: String,
+      default: "",
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+
+    customerPhone: {
+      type: String,
+      default: "",
+      trim: true,
+      index: true,
+    },
+
+    customerName: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    bookingSource: {
+      type: String,
+      enum: ["guest", "customer_account", "admin", "merchant_staff"],
+      default: "guest",
+      index: true,
+    },
+
     merchantSlug: {
       type: String,
       required: true,
