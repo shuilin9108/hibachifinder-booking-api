@@ -461,10 +461,17 @@ router.post("/", async (req, res) => {
 
   const bookingId = `bk_${Date.now()}`;
 
+  const customerData = payload?.customer || {};
+
   const bookingRecord = {
     ...payload,
     merchantSlug,
     bookingId,
+    customerId: payload?.customerId || customerData?.customerId || null,
+    customerEmail: String(customerData?.email || payload?.email || "").trim().toLowerCase(),
+    customerPhone: String(customerData?.phone || payload?.phone || "").trim(),
+    customerName: String(customerData?.name || payload?.name || "").trim(),
+    bookingSource: payload?.customerId || customerData?.customerId ? "customer_account" : "guest",
     status: "pending",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
