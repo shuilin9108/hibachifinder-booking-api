@@ -32,10 +32,15 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get("/:chefId", async (req, res) => {
+router.get("/:chefSlugOrId", async (req, res) => {
   try {
+    const chefSlugOrId = String(req.params.chefSlugOrId || "").trim().toLowerCase();
+
     const chef = await Chef.findOne({
-      chefId: req.params.chefId,
+      $or: [
+        { chefId: chefSlugOrId },
+        { slug: chefSlugOrId },
+      ],
       status: "active",
       profileVisibility: "public",
     });

@@ -12,9 +12,39 @@ const chefSchema = new mongoose.Schema(
       trim: true,
     },
 
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+      trim: true,
+      lowercase: true,
+    },
+
+    platformUserId: {
+      type: String,
+      default: "",
+      index: true,
+      trim: true,
+    },
+
+    email: {
+      type: String,
+      default: "",
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+
     name: {
       type: String,
       required: true,
+      trim: true,
+    },
+
+    displayName: {
+      type: String,
+      default: "",
       trim: true,
     },
 
@@ -31,6 +61,12 @@ const chefSchema = new mongoose.Schema(
     },
 
     merchantSlug: {
+      type: String,
+      default: null,
+      index: true,
+    },
+
+    affiliatedMerchant: {
       type: String,
       default: null,
       index: true,
