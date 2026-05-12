@@ -20,7 +20,11 @@ async function requireAdminUser(req, res, next) {
     }
 
     const adminEmail = String(
-      tokenUser?.email || req.query.adminEmail || "",
+      tokenUser?.email ||
+        req.headers["x-admin-email"] ||
+        req.headers["X-Admin-Email"] ||
+        req.query.adminEmail ||
+        "",
     ).trim().toLowerCase();
 
     if (!adminEmail) {
