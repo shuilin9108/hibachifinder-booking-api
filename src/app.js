@@ -71,8 +71,14 @@ app.use(
       "https://app.hibachifinder.com",
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-    credentials: false,
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "x-admin-email",
+      "X-Admin-Email",
+    ],
+    credentials: true,
   }),
 );
 
