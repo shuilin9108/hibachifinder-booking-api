@@ -1,12 +1,21 @@
-import express from "express";
-import jwt from "jsonwebtoken";
-import { createRequire } from "module";
-import Customer from "../models/Customer.js";
-
-const require = createRequire(import.meta.url);
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const Customer = require("../models/Customer").default || require("../models/Customer");
 const { verifyGoogleIdToken } = require("../services/googleAuthService");
 
 const router = express.Router();
+
+function signCustomerToken(customer) {
+  return jwt.sign(
+    {
+      customerId: customer._id,
+      email: customer.email,
+      role: "customer",
+    },
+    process.env.CUSTOMER_JWT_SECRET || "dev-customer-secret-change-me",
+    { expiresIn: "30d" },
+  );
+}
 
 router.post("/login", async (req, res) => {
   try {
@@ -37,19 +46,9 @@ router.post("/login", async (req, res) => {
       },
     );
 
-    const token = jwt.sign(
-      {
-        customerId: customer._id,
-        email: customer.email,
-        role: "customer",
-      },
-      process.env.CUSTOMER_JWT_SECRET || "dev-customer-secret-change-me",
-      { expiresIn: "30d" },
-    );
-
     res.json({
       success: true,
-      token,
+      token: signCustomerToken(customer),
       customer,
     });
   } catch (error) {
@@ -59,7 +58,6 @@ router.post("/login", async (req, res) => {
     });
   }
 });
-
 
 router.post("/google", async (req, res) => {
   try {
@@ -92,19 +90,9 @@ router.post("/google", async (req, res) => {
       },
     );
 
-    const token = jwt.sign(
-      {
-        customerId: customer._id,
-        email: customer.email,
-        role: "customer",
-      },
-      process.env.CUSTOMER_JWT_SECRET || "dev-customer-secret-change-me",
-      { expiresIn: "30d" },
-    );
-
     res.json({
       success: true,
-      token,
+      token: signCustomerToken(customer),
       customer,
     });
   } catch (error) {
@@ -115,4 +103,4 @@ router.post("/google", async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;
