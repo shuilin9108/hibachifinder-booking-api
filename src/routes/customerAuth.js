@@ -77,6 +77,7 @@ router.post("/google", async (req, res) => {
       {
         $set: {
           name: googleUser.name || "",
+          avatarUrl: googleUser.picture || "",
           authProvider: "google",
         },
         $setOnInsert: {

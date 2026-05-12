@@ -25,6 +25,19 @@ const customerSchema = new mongoose.Schema(
       trim: true,
     },
 
+    avatarUrl: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    memberTier: {
+      type: String,
+      enum: ["free", "plus", "premium"],
+      default: "free",
+      index: true,
+    },
+
     authProvider: {
       type: String,
       enum: ["email", "google", "guest_upgrade"],
