@@ -462,6 +462,8 @@ router.post("/", async (req, res) => {
   const bookingId = `bk_${Date.now()}`;
 
   const customerData = payload?.customer || {};
+  const requestedChef = payload?.requestedChef || {};
+  const requestedChefId = String(requestedChef?.chefId || payload?.requestedChefId || "").trim();
 
   const bookingRecord = {
     ...payload,
@@ -472,6 +474,12 @@ router.post("/", async (req, res) => {
     customerPhone: String(customerData?.phone || payload?.phone || "").trim(),
     customerName: String(customerData?.name || payload?.name || "").trim(),
     bookingSource: payload?.customerId || customerData?.customerId ? "customer_account" : "guest",
+    requestedChefId,
+    requestedChefSource: requestedChef?.source || "",
+    requestedChef: {
+      ...requestedChef,
+      chefId: requestedChefId,
+    },
     status: "pending",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
