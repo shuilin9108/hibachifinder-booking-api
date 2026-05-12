@@ -2,6 +2,7 @@
 
 import express from "express";
 import Review from "../models/Review.js";
+import Booking from "../models/Booking.js";
 import { getReviewStats } from "../services/reviewStatsService.js";
 
 const router = express.Router();
@@ -46,25 +47,76 @@ router.get("/chef/:chefId", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
+    let verified = false;
+    let reviewSource = req.body.source || "guest_form";
+
+    let merchantSlug = req.body.merchantSlug || null;
+    let chefId = req.body.chefId || null;
+
+    let customerName =
+      req.body.customerName ||
+      req.body.reviewerDisplayName ||
+      "Guest Customer";
+
+    let customerEmail = req.body.customerEmail || "";
+
+    if (req.body.bookingId) {
+      const booking = await Booking.findById(req.body.bookingId);
+
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          error: "Booking not found.",
+        });
+      }
+
+      if (booking.status !== "completed") {
+        return res.status(400).json({
+          success: false,
+          error: "Only completed bookings can submit verified reviews.",
+        });
+      }
+
+      verified = true;
+      reviewSource = "verified_booking_flow";
+
+      merchantSlug =
+        merchantSlug ||
+        booking.merchantSlug ||
+        null;
+
+      chefId =
+        chefId ||
+        booking.requestedChefId ||
+        booking.assignedChefPlatformUserId ||
+        null;
+
+      customerName =
+        booking.customerName ||
+        customerName;
+
+      customerEmail =
+        booking.customerEmail ||
+        customerEmail;
+    }
+
     const review = await Review.create({
       reviewType: req.body.reviewType,
-      merchantSlug: req.body.merchantSlug || null,
-      chefId: req.body.chefId || null,
+      merchantSlug,
+      chefId,
       bookingId: req.body.bookingId || null,
       reviewerType: req.body.reviewerType || "guest",
       reviewerUserId: req.body.reviewerUserId || null,
       reviewerDisplayName: req.body.reviewerDisplayName || "",
-      source: req.body.bookingId
-        ? "verified_booking_flow"
-        : req.body.source || "guest_form",
-      customerName: req.body.customerName || req.body.reviewerDisplayName || "Guest Customer",
-      customerEmail: req.body.customerEmail || "",
+      source: reviewSource,
+      customerName,
+      customerEmail,
       rating: Number(req.body.rating),
       title: req.body.title || "",
       comment: req.body.comment,
       eventType: req.body.eventType || "",
       city: req.body.city || "",
-      verified: Boolean(req.body.bookingId),
+      verified,
       status: "pending",
     });
 
