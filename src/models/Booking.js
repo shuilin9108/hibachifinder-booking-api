@@ -82,6 +82,30 @@ const bookingSchema = new mongoose.Schema(
       default: {},
     },
 
+    requestedChefId: {
+      type: String,
+      default: "",
+      trim: true,
+      index: true,
+    },
+
+    requestedChefName: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    requestedChefSource: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    requestedChef: {
+      type: Object,
+      default: {},
+    },
+
     assignedChefEmail: {
       type: String,
       default: null,
