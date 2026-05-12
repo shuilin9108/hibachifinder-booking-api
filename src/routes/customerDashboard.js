@@ -1,20 +1,37 @@
-// Customer Dashboard API：根据客户 email 读取账号资料、订单历史、收藏、积分和礼品卡信息。
-
-import express from "express";
-import Customer from "../models/Customer.js";
-import Booking from "../models/Booking.js";
-import Review from "../models/Review.js";
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const Customer = require("../models/Customer").default || require("../models/Customer");
+const Booking = require("../models/Booking");
+const Review = require("../models/Review").default || require("../models/Review");
 
 const router = express.Router();
 
+function getCustomerEmailFromRequest(req) {
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : "";
+
+  if (token) {
+    const decoded = jwt.verify(
+      token,
+      process.env.CUSTOMER_JWT_SECRET || "dev-customer-secret-change-me",
+    );
+
+    return String(decoded.email || "").trim().toLowerCase();
+  }
+
+  return String(req.query.email || "").trim().toLowerCase();
+}
+
 router.get("/", async (req, res) => {
   try {
-    const email = String(req.query.email || "").trim().toLowerCase();
+    const email = getCustomerEmailFromRequest(req);
 
     if (!email) {
       return res.status(400).json({
         success: false,
-        error: "Email is required.",
+        error: "Customer email or token is required.",
       });
     }
 
@@ -46,8 +63,8 @@ router.get("/", async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(401).json({ success: false, error: error.message });
   }
 });
 
-export default router;
+module.exports = router;
