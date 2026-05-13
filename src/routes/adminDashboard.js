@@ -2,6 +2,7 @@
 
 const express = require("express");
 const Booking = require("../models/Booking");
+const { requireAdminUser } = require("../middleware/adminAuth");
 
 const router = express.Router();
 const getMerchantConfig = require("../core/merchants/getMerchantConfig");
@@ -14,16 +15,20 @@ function moneyNumber(value) {
   return Number(value || 0);
 }
 
-router.get("/:merchantSlug", async (req, res) => {
+router.get("/:merchantSlug", requireAdminUser, async (req, res) => {
   try {
     const { merchantSlug } = req.params;
-    const { adminEmail } = req.query;
+    const user = req.adminUser;
     const merchantConfig = getMerchantConfig(merchantSlug);
 
-    if (!adminEmail) {
-      return res.status(401).json({
+    const canAccess =
+      user?.role === "platform_admin" ||
+      (user?.merchantSlugs || []).includes(merchantSlug);
+
+    if (!canAccess) {
+      return res.status(403).json({
         success: false,
-        error: "Admin email is required.",
+        error: "Forbidden",
       });
     }
 
