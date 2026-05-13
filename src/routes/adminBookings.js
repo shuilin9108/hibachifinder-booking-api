@@ -665,7 +665,7 @@ router.patch("/:bookingId/selection", requireAdminUser, async (req, res) => {
 router.patch("/:bookingId/save-all", requireAdminUser, async (req, res) => {
   try {
     const user = req.adminUser;
-    const { event, selection } = req.body;
+    const { event, selection, status } = req.body;
 
     const bookingDoc = await Booking.findOne({
       bookingId: req.params.bookingId,
@@ -696,6 +696,26 @@ router.patch("/:bookingId/save-all", requireAdminUser, async (req, res) => {
     bookingDoc.event = nextBooking.event;
     bookingDoc.selection = nextBooking.selection;
     bookingDoc.pricingSnapshot = nextBooking.pricingSnapshot;
+
+    if (status) {
+      const allowedStatuses = [
+        "pending",
+        "confirmed",
+        "deposit_paid",
+        "completed",
+        "cancelled",
+      ];
+
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid booking status",
+        });
+      }
+
+      bookingDoc.status = status;
+    }
+
     bookingDoc.updatedAt = new Date().toISOString();
 
     await bookingDoc.save();
