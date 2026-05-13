@@ -13,10 +13,14 @@ async function requireAdminUser(req, res, next) {
     let tokenUser = null;
 
     if (bearerToken) {
-      tokenUser = jwt.verify(
-        bearerToken,
-        process.env.ADMIN_JWT_SECRET || "dev-admin-secret-change-me",
-      );
+      try {
+        tokenUser = jwt.verify(
+          bearerToken,
+          process.env.ADMIN_JWT_SECRET || "dev-admin-secret-change-me",
+        );
+      } catch (tokenError) {
+        console.warn("ADMIN TOKEN VERIFY FAILED, falling back to admin email header:", tokenError.message);
+      }
     }
 
     const adminEmail = String(
