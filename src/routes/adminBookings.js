@@ -760,6 +760,16 @@ router.patch("/:bookingId/save-all", requireAdminUser, async (req, res) => {
       await bookingDoc.save();
     }
 
+    if (status) {
+      bookingDoc.status = status;
+      bookingDoc.updatedAt = new Date().toISOString();
+      await bookingDoc.save();
+    }
+
+    const freshBooking = await Booking.findOne({
+      bookingId: req.params.bookingId,
+    }).lean();
+
     const merchant = getMerchantConfig(bookingDoc.merchantSlug);
 
     return res.status(200).json({
@@ -769,7 +779,7 @@ router.patch("/:bookingId/save-all", requireAdminUser, async (req, res) => {
         : "All updates saved. Calendar sync did not complete. No email was sent.",
       calendarResult,
       booking: {
-        ...bookingDoc.toObject(),
+        ...(freshBooking || bookingDoc.toObject()),
         merchantConfig: merchant,
       },
     });
