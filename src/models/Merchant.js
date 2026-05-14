@@ -57,6 +57,11 @@ const MerchantSchema = new mongoose.Schema(
       merchantEmails: [String],
     },
 
+    promotions: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+
     extraProteinCatalog: [
       {
         id: String,

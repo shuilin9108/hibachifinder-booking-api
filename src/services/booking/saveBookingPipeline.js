@@ -1,3 +1,13 @@
+
+function normalizeManualDiscountInput(value = {}) {
+  return {
+    enabled: !!value.enabled || Number(value.value || 0) > 0,
+    type: value.type === "percent" ? "percent" : "flat",
+    value: Number(value.value || 0),
+    reason: String(value.reason || "").trim(),
+  };
+}
+
 // 统一处理订单更新后的所有同步逻辑：价格、PDF、Calendar、Sheets、Payment Summary。
 
 const { calculatePricing } = require("../../core/pricing/pricingEngine");
@@ -5,7 +15,7 @@ const getMerchantConfig = require("../../core/merchants/getMerchantConfig");
 const { upsertBookingCalendarEvent } = require("../bookingCalendarService");
 
 async function saveBookingPipeline(options = {}) {
-  const { booking, updatedEvent, updatedSelection } = options;
+  const { booking, updatedEvent, updatedSelection, manualDiscount: manualDiscountInput } = options;
 
   console.log("STEP 1: merge booking changes");
 
@@ -38,17 +48,76 @@ async function saveBookingPipeline(options = {}) {
     addOns: nextBooking.selection?.addOns || {},
   };
 
-  const recalculatedPricing = calculatePricing(formForPricing, merchant);
+  const manualDiscount = normalizeManualDiscountInput(
+    manualDiscountInput ||
+      nextBooking.manualDiscount ||
+      nextBooking.pricingSnapshot?.manualDiscountConfig ||
+      {},
+  );
+
+  const formWithManualDiscount = {
+    ...formForPricing,
+    admin: {
+      ...(formForPricing.admin || {}),
+      manualDiscount,
+    },
+  };
+
+  const recalculatedPricing = calculatePricing(formWithManualDiscount, merchant);
+
+  const subtotalBeforeDiscount = Number(
+    recalculatedPricing.subtotalBeforeDiscount || 0,
+  );
+
+  const manualDiscountAmount = manualDiscount.enabled
+    ? manualDiscount.type === "percent"
+      ? Math.round(
+          subtotalBeforeDiscount *
+            (Math.min(100, Math.max(0, Number(manualDiscount.value || 0))) /
+              100),
+        )
+      : Math.min(
+          subtotalBeforeDiscount,
+          Math.max(0, Number(manualDiscount.value || 0)),
+        )
+    : 0;
+
+  const promoAndBirthdayDiscount =
+    Number(recalculatedPricing.promoCodeDiscount || 0) +
+    Number(recalculatedPricing.birthdayDiscount || 0);
+
+  const finalTotalDiscount = promoAndBirthdayDiscount + manualDiscountAmount;
+  const finalSubtotal = Math.max(0, subtotalBeforeDiscount - finalTotalDiscount);
+  const finalTax = Number(recalculatedPricing.tax || 0);
+  const finalTotal = finalSubtotal + finalTax;
 
   nextBooking.pricingSnapshot = {
     ...(nextBooking.pricingSnapshot || {}),
     ...recalculatedPricing,
-    totalPrice: Number(
-      recalculatedPricing.total || recalculatedPricing.totalPrice || 0,
-    ),
-    total: Number(
-      recalculatedPricing.total || recalculatedPricing.totalPrice || 0,
-    ),
+    manualDiscount: manualDiscountAmount,
+    manualDiscountType: manualDiscount.type,
+    manualDiscountValue: Number(manualDiscount.value || 0),
+    manualDiscountReason: manualDiscount.reason || "",
+    manualDiscountConfig: manualDiscount,
+    totalDiscount: finalTotalDiscount,
+    subtotal: finalSubtotal,
+    totalPrice: finalTotal,
+    total: finalTotal,
+    tipRecommendationBase: subtotalBeforeDiscount,
+    pricingBreakdown: {
+      ...(recalculatedPricing.pricingBreakdown || {}),
+      discounts: {
+        ...(recalculatedPricing.pricingBreakdown?.discounts || {}),
+        manualDiscount: manualDiscountAmount,
+        total: finalTotalDiscount,
+      },
+      totals: {
+        ...(recalculatedPricing.pricingBreakdown?.totals || {}),
+        subtotalBeforeDiscount,
+        subtotal: finalSubtotal,
+        total: finalTotal,
+      },
+    },
   };
 
   console.log("STEP 4: rebuild payment summary");

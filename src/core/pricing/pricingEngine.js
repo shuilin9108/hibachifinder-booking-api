@@ -119,6 +119,21 @@ function getAgeOnEventDate(eventDateObj, birthdayParsed) {
   return age;
 }
 
+
+function getManualDiscountAmount(manualDiscount = {}, subtotalBeforeDiscount = 0) {
+  if (!manualDiscount?.enabled) return 0;
+
+  const subtotal = Number(subtotalBeforeDiscount || 0);
+
+  if (manualDiscount.type === "percent") {
+    const percent = Math.min(100, Math.max(0, Number(manualDiscount.value || 0)));
+    return Math.round(subtotal * (percent / 100));
+  }
+
+  const amount = Number(manualDiscount.value || 0);
+  return Math.min(subtotal, Math.max(0, amount));
+}
+
 function getPromoCodeDiscount(form, merchant) {
   const promoField = merchant?.promotions?.promoCodeField;
   const codes = merchant?.promotions?.codes || [];
@@ -368,7 +383,10 @@ function emptyPricing() {
     subtotalBeforeDiscount: 0,
     promoCodeDiscount: 0,
     birthdayDiscount: 0,
+    manualDiscount: 0,
+    manualDiscountReason: "",
     totalDiscount: 0,
+    tipRecommendationBase: 0,
     appliedDiscountLabel: "",
     birthdayDiscountAppliedTo: "",
     birthdayGuestAgeOnEventDate: null,
@@ -553,8 +571,23 @@ function calculatePricing(form, merchant) {
     }
   }
 
-  const totalDiscount = appliedPromoDiscount + appliedBirthdayDiscount;
+  const manualDiscount =
+    form?.admin?.manualDiscount ||
+    form?.manualDiscount ||
+    form?.shared?.manualDiscount ||
+    {};
+
+  const appliedManualDiscount = getManualDiscountAmount(
+    manualDiscount,
+    subtotalBeforeDiscount,
+  );
+
+  const totalDiscount =
+    appliedPromoDiscount + appliedBirthdayDiscount + appliedManualDiscount;
+
   const subtotal = Math.max(0, subtotalBeforeDiscount - totalDiscount);
+
+  const tipRecommendationBase = subtotalBeforeDiscount;
 
   let deposit = 0;
   let optionalDepositLabel = "";
@@ -606,7 +639,12 @@ function calculatePricing(form, merchant) {
     subtotalBeforeDiscount,
     promoCodeDiscount: appliedPromoDiscount,
     birthdayDiscount: appliedBirthdayDiscount,
+    manualDiscount: appliedManualDiscount,
+    manualDiscountType: manualDiscount.type || "flat",
+    manualDiscountValue: Number(manualDiscount.value || 0),
+    manualDiscountReason: manualDiscount.reason || "",
     totalDiscount,
+    tipRecommendationBase,
     appliedDiscountLabel,
     birthdayDiscountAppliedTo: birthdayDiscount.appliedTo || "",
     birthdayGuestAgeOnEventDate: birthdayDiscount.ageOnEventDate,

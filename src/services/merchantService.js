@@ -202,6 +202,7 @@ async function upsertMerchantSettings({ slug, updates = {}, updatedBy = "" }) {
     payments: updates.payments || {},
     integrations: updates.integrations || {},
     notifications: updates.notifications || {},
+    promotions: updates.promotions || {},
     redirects: updates.redirects || {},
     settings: updates.settings || {},
     chefs: await normalizeChefs(updates.chefs || []),

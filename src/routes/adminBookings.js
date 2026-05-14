@@ -4,6 +4,27 @@ const express = require("express");
 const router = express.Router();
 const { calculatePricing } = require("../core/pricing/pricingEngine");
 const getMerchantConfig = require("../core/merchants/getMerchantConfig");
+
+function normalizeManualDiscountInput(value = {}) {
+  return {
+    enabled: !!value.enabled || Number(value.value || 0) > 0,
+    type: value.type === "percent" ? "percent" : "flat",
+    value: Number(value.value || 0),
+    reason: String(value.reason || "").trim(),
+  };
+}
+
+function attachManualDiscountToForm(formForPricing, req) {
+  const manualDiscount = normalizeManualDiscountInput(req?.body?.manualDiscount || {});
+  return {
+    ...formForPricing,
+    admin: {
+      ...(formForPricing.admin || {}),
+      manualDiscount,
+    },
+  };
+}
+
 const { requireAdminUser } = require("../middleware/adminAuth");
 const { canAccessMerchant } = require("../data/adminUsers");
 const { sendBookingEmails } = require("../services/bookingEmailService");
@@ -549,11 +570,13 @@ router.patch("/:bookingId/event", requireAdminUser, async (req, res) => {
       addOns: bookingDoc.selection?.addOns || {},
     };
 
-    const recalculatedPricing = calculatePricing(formForPricing, merchant);
+    const formWithManualDiscount = attachManualDiscountToForm(formForPricing, req);
+    const recalculatedPricing = calculatePricing(formWithManualDiscount, merchant);
 
     bookingDoc.pricingSnapshot = {
       ...(bookingDoc.pricingSnapshot || {}),
       ...recalculatedPricing,
+      manualDiscountConfig: normalizeManualDiscountInput(req?.body?.manualDiscount || {}),
       totalPrice: Number(
         recalculatedPricing.total || recalculatedPricing.totalPrice || 0,
       ),
@@ -629,11 +652,13 @@ router.patch("/:bookingId/selection", requireAdminUser, async (req, res) => {
       addOns: bookingDoc.selection?.addOns || {},
     };
 
-    const recalculatedPricing = calculatePricing(formForPricing, merchant);
+    const formWithManualDiscount = attachManualDiscountToForm(formForPricing, req);
+    const recalculatedPricing = calculatePricing(formWithManualDiscount, merchant);
 
     bookingDoc.pricingSnapshot = {
       ...(bookingDoc.pricingSnapshot || {}),
       ...recalculatedPricing,
+      manualDiscountConfig: normalizeManualDiscountInput(req?.body?.manualDiscount || {}),
       totalPrice: Number(
         recalculatedPricing.total || recalculatedPricing.totalPrice || 0,
       ),
@@ -665,7 +690,7 @@ router.patch("/:bookingId/selection", requireAdminUser, async (req, res) => {
 router.patch("/:bookingId/save-all", requireAdminUser, async (req, res) => {
   try {
     const user = req.adminUser;
-    const { event, selection, status } = req.body;
+    const { event, selection, status, manualDiscount } = req.body;
 
     const bookingDoc = await Booking.findOne({
       bookingId: req.params.bookingId,
@@ -689,6 +714,7 @@ router.patch("/:bookingId/save-all", requireAdminUser, async (req, res) => {
       booking: bookingDoc.toObject(),
       updatedEvent: event,
       updatedSelection: selection,
+      manualDiscount,
     });
 
     const nextBooking = pipelineResult.booking;
