@@ -279,6 +279,12 @@ function generateInvoiceBuffer(booking) {
     const promoCode = shared?.promoCode || "None";
     const promoDiscount = Number(pricing?.promoCodeDiscount || 0);
     const birthdayDiscount = Number(pricing?.birthdayDiscount || 0);
+    const manualDiscount = Number(pricing?.manualDiscount || 0);
+    const manualDiscountReason = pricing?.manualDiscountReason || "";
+    const manualTravelFeeReason =
+      pricing?.manualTravelFeeOverride?.reason ||
+      pricing?.pricingBreakdown?.travel?.reason ||
+      "";
 
     const gratuity20 = Number((totalPrice * 0.2).toFixed(2));
     const gratuity25 = Number((totalPrice * 0.25).toFixed(2));
@@ -594,12 +600,13 @@ function generateInvoiceBuffer(booking) {
       },
     );
 
-    const travelFeeDisplay =
-      pricing?.travelFeeStatus === "manual_review_required" ||
-      pricing?.travelFeeModel === "custom_quote" ||
-      pricing?.travelFeeModel === "manual_only"
+    const travelFeeDisplay = manualTravelFeeReason
+      ? `${money(breakdown?.travel?.fee || pricing?.travelFee || 0)} — ${manualTravelFeeReason}`
+      : pricing?.travelFeeStatus === "manual_review_required" ||
+          pricing?.travelFeeModel === "custom_quote" ||
+          pricing?.travelFeeModel === "manual_only"
         ? pricing?.travelFeeLabel || "Travel fee will be confirmed later"
-        : money(breakdown?.travel?.fee || 0);
+        : money(breakdown?.travel?.fee || pricing?.travelFee || 0);
 
     pY = drawKeyValue(
       doc,
@@ -646,7 +653,7 @@ function generateInvoiceBuffer(booking) {
     pY = drawKeyValue(
       doc,
       "Promo Disc.",
-      `-${money(breakdown?.discounts?.promoCodeDiscount || 0)}`,
+      `-${money(breakdown?.discounts?.promoCodeDiscount || promoDiscount || 0)}`,
       leftX + 12,
       pY,
       priceW,
@@ -658,8 +665,25 @@ function generateInvoiceBuffer(booking) {
 
     pY = drawKeyValue(
       doc,
+      "Manual Disc.",
+      manualDiscount > 0
+        ? `-${money(manualDiscount)}${manualDiscountReason ? " — " + manualDiscountReason : ""}`
+        : "-$0.00",
+      leftX + 12,
+      pY,
+      priceW,
+      {
+        fontSize: 7.4,
+        labelWidth: 100,
+        allowMultiline: true,
+        valueAlign: "right",
+      },
+    );
+
+    pY = drawKeyValue(
+      doc,
       "Discounted Sub",
-      money(breakdown?.totals?.subtotal || 0),
+      money(pricing?.subtotal ?? breakdown?.totals?.subtotal ?? 0),
       leftX + 12,
       pY,
       priceW,
