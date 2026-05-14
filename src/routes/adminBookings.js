@@ -690,7 +690,7 @@ router.patch("/:bookingId/selection", requireAdminUser, async (req, res) => {
 router.patch("/:bookingId/save-all", requireAdminUser, async (req, res) => {
   try {
     const user = req.adminUser;
-    const { event, selection, status, manualDiscount } = req.body;
+    const { event, selection, status, manualDiscount, manualTravelFee } = req.body;
 
     const bookingDoc = await Booking.findOne({
       bookingId: req.params.bookingId,
@@ -715,6 +715,7 @@ router.patch("/:bookingId/save-all", requireAdminUser, async (req, res) => {
       updatedEvent: event,
       updatedSelection: selection,
       manualDiscount,
+      manualTravelFee,
     });
 
     const nextBooking = pipelineResult.booking;

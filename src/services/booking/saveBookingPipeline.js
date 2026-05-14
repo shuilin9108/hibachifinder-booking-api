@@ -1,4 +1,12 @@
 
+function normalizeManualTravelFeeInput(value = {}) {
+  return {
+    enabled: !!value.enabled || value.value !== "",
+    value: Number(value.value || 0),
+    reason: String(value.reason || "").trim(),
+  };
+}
+
 function normalizeManualDiscountInput(value = {}) {
   return {
     enabled: !!value.enabled || Number(value.value || 0) > 0,
@@ -15,7 +23,13 @@ const getMerchantConfig = require("../../core/merchants/getMerchantConfig");
 const { upsertBookingCalendarEvent } = require("../bookingCalendarService");
 
 async function saveBookingPipeline(options = {}) {
-  const { booking, updatedEvent, updatedSelection, manualDiscount: manualDiscountInput } = options;
+  const {
+    booking,
+    updatedEvent,
+    updatedSelection,
+    manualDiscount: manualDiscountInput,
+    manualTravelFee: manualTravelFeeInput,
+  } = options;
 
   console.log("STEP 1: merge booking changes");
 
@@ -86,8 +100,24 @@ async function saveBookingPipeline(options = {}) {
     Number(recalculatedPricing.promoCodeDiscount || 0) +
     Number(recalculatedPricing.birthdayDiscount || 0);
 
+  const manualTravelFee = normalizeManualTravelFeeInput(
+    manualTravelFeeInput ||
+      nextBooking.pricingSnapshot?.manualTravelFeeOverride ||
+      {},
+  );
+
+  const originalTravelFee = Number(recalculatedPricing.travelFee || 0);
+  const finalTravelFee = manualTravelFee.enabled
+    ? Math.max(0, Number(manualTravelFee.value || 0))
+    : originalTravelFee;
+
+  const travelFeeDelta = finalTravelFee - originalTravelFee;
+
   const finalTotalDiscount = promoAndBirthdayDiscount + manualDiscountAmount;
-  const finalSubtotal = Math.max(0, subtotalBeforeDiscount - finalTotalDiscount);
+  const finalSubtotal = Math.max(
+    0,
+    subtotalBeforeDiscount + travelFeeDelta - finalTotalDiscount,
+  );
   const finalTax = Number(recalculatedPricing.tax || 0);
   const finalTotal = finalSubtotal + finalTax;
 
@@ -99,6 +129,13 @@ async function saveBookingPipeline(options = {}) {
     manualDiscountValue: Number(manualDiscount.value || 0),
     manualDiscountReason: manualDiscount.reason || "",
     manualDiscountConfig: manualDiscount,
+    manualTravelFeeOverride: manualTravelFee,
+    travelFee: finalTravelFee,
+    travelFeeLabel: manualTravelFee.enabled
+      ? manualTravelFee.reason
+        ? `${manualTravelFee.reason}: $${finalTravelFee.toFixed(2)}`
+        : `Manual travel fee: $${finalTravelFee.toFixed(2)}`
+      : recalculatedPricing.travelFeeLabel,
     totalDiscount: finalTotalDiscount,
     subtotal: finalSubtotal,
     totalPrice: finalTotal,
@@ -110,6 +147,12 @@ async function saveBookingPipeline(options = {}) {
         ...(recalculatedPricing.pricingBreakdown?.discounts || {}),
         manualDiscount: manualDiscountAmount,
         total: finalTotalDiscount,
+      },
+      travel: {
+        ...(recalculatedPricing.pricingBreakdown?.travel || {}),
+        fee: finalTravelFee,
+        manualOverride: manualTravelFee.enabled,
+        reason: manualTravelFee.reason || "",
       },
       totals: {
         ...(recalculatedPricing.pricingBreakdown?.totals || {}),
