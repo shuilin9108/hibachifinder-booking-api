@@ -19,7 +19,11 @@ router.get("/:merchantSlug", requireAdminUser, async (req, res) => {
   try {
     const { merchantSlug } = req.params;
     const user = req.adminUser;
-    const merchantConfig = getMerchantConfig(merchantSlug);
+    const isPlatformMode = merchantSlug === "__all__";
+
+    const merchantConfig = isPlatformMode
+      ? null
+      : getMerchantConfig(merchantSlug);
 
     const canAccess =
       user?.role === "platform_admin" ||
@@ -34,10 +38,15 @@ router.get("/:merchantSlug", requireAdminUser, async (req, res) => {
 
     const startOfToday = getStartOfToday();
 
-    const bookings = await Booking.find({
-      merchantSlug,
+    const query = {
       isArchived: { $ne: true },
-    }).lean();
+    };
+
+    if (!isPlatformMode) {
+      query.merchantSlug = merchantSlug;
+    }
+
+    const bookings = await Booking.find(query).lean();
 
     const todayOrders = bookings.filter((booking) => {
       const createdAt = booking.createdAt ? new Date(booking.createdAt) : null;
@@ -75,12 +84,16 @@ router.get("/:merchantSlug", requireAdminUser, async (req, res) => {
 return res.json({
   success: true,
   merchantSlug,
-  merchant: {
-    integrations: {
-      googleCalendar: merchantConfig?.integrations?.googleCalendar || {},
-      googleSheets: merchantConfig?.integrations?.googleSheets || {},
-    },
-  },
+  merchant: isPlatformMode
+    ? null
+    : {
+        integrations: {
+          googleCalendar:
+            merchantConfig?.integrations?.googleCalendar || {},
+          googleSheets:
+            merchantConfig?.integrations?.googleSheets || {},
+        },
+      },
   summary: {
     todayOrders,
     expectedRevenue,
